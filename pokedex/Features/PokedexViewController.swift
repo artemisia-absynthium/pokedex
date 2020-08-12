@@ -22,6 +22,7 @@ class PokedexViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         viewModel.delegate = self
+        collectionView.delegate = self
         collectionView.dataSource = self
         collectionView.prefetchDataSource = self
         viewModel.nextPage {
@@ -141,7 +142,7 @@ extension PokedexViewController: UICollectionViewDataSource, UICollectionViewDat
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let layout = collectionViewLayout as? UICollectionViewFlowLayout
-        let width = collectionView.frame.width - collectionView.contentInset.left - collectionView.contentInset.right - (layout?.sectionInset.left ?? 0) - (layout?.sectionInset.right ?? 0) - 40
+        let width = collectionView.frame.width - collectionView.contentInset.left - collectionView.contentInset.right - (layout?.sectionInset.left ?? 0) - (layout?.sectionInset.right ?? 0)
         return CGSize(width: width, height: 100)
     }
     
