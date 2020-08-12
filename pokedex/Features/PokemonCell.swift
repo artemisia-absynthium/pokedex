@@ -12,11 +12,16 @@ class PokemonCell: UICollectionViewCell {
 
     @IBOutlet weak var imageView: UIImageView!
     @IBOutlet weak var label: UILabel!
-
+    
     static let reuseIdentifier = "pokemonCell"
 
     /// The Pokemon URL for the pokemon this cell is presenting.
     var representedIdentifier: String?
+
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        self.layer.cornerRadius = 10
+    }
 
     // MARK: Convenience
 
