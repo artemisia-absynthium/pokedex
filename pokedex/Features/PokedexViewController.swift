@@ -49,12 +49,15 @@ class PokedexViewController: UIViewController {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "showDetail" {
             if let indexPath = collectionView.indexPathsForSelectedItems?.first {
-                let object = viewModel.pokemonList[indexPath.row]
-                let controller = (segue.destination as! UINavigationController).topViewController as! PokemonViewController
-                controller.detailItem = object
-                controller.navigationItem.leftBarButtonItem = splitViewController?.displayModeButtonItem
-                controller.navigationItem.leftItemsSupplementBackButton = true
-                detailViewController = controller
+                let pokemon = viewModel.pokemonList[indexPath.row]
+                let identifier = pokemon.url
+                if let fetchedData = asyncFetcher.fetchedData(for: identifier) {
+                    let controller = (segue.destination as! UINavigationController).topViewController as! PokemonViewController
+                    controller.detailItem = fetchedData
+                    controller.navigationItem.leftBarButtonItem = splitViewController?.displayModeButtonItem
+                    controller.navigationItem.leftItemsSupplementBackButton = true
+                    detailViewController = controller
+                }
             }
         }
     }
@@ -81,7 +84,6 @@ extension PokedexViewController: UICollectionViewDataSource, UICollectionViewDat
             let pokemon = viewModel.pokemonList[indexPath.row]
             let identifier = pokemon.url
             cell.representedIdentifier = identifier
-            cell.label.text = pokemon.name.capitalized
 
             if let fetchedData = asyncFetcher.fetchedData(for: identifier) {
                 cell.configure(with: fetchedData)
@@ -96,7 +98,6 @@ extension PokedexViewController: UICollectionViewDataSource, UICollectionViewDat
                 }
             }
         } else {
-            cell.label.text = ""
             cell.configure(with: nil)
             viewModel.nextPage {
                 self.configure(cell: cell, at: indexPath)

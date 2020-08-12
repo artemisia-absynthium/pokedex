@@ -25,7 +25,7 @@ class Network {
         fetch(urlString: urlString, completion: completion)
     }
 
-    func pokemonDetails(urlString: String, completion: @escaping (Result<PokemonDetails, Error>) -> Void) {
+    func pokemon(urlString: String, completion: @escaping (Result<Pokemon, Error>) -> Void) {
         fetch(urlString: urlString, completion: completion)
     }
 

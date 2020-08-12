@@ -31,7 +31,8 @@ class PokemonCell: UICollectionViewCell {
      - Parameters:
          - data: An optional `Pokemon` object to display.
     */
-    func configure(with pokemon: PokemonDetails?) {
+    func configure(with pokemon: Pokemon?) {
+        label.text = pokemon?.name.capitalized
         imageView.image = pokemon?.sprites?.frontDefaultImage
     }
     

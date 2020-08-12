@@ -20,10 +20,10 @@ class AsyncFetcher {
     private let fetchQueue = OperationQueue()
 
     /// A dictionary of arrays of closures to call when an object has been fetched for an id.
-    private var completionHandlers = [String: [(PokemonDetails?) -> Void]]()
+    private var completionHandlers = [String: [(Pokemon?) -> Void]]()
 
     /// An `NSCache` used to store fetched objects.
-    private var cache = NSCache<NSString, PokemonDetails>()
+    private var cache = NSCache<NSString, Pokemon>()
 
     // MARK: Initialization
 
@@ -41,7 +41,7 @@ class AsyncFetcher {
          - identifier: The `UUID` to fetch data for.
          - completion: An optional called when the data has been fetched.
     */
-    func fetchAsync(_ identifier: String, completion: ((PokemonDetails?) -> Void)? = nil) {
+    func fetchAsync(_ identifier: String, completion: ((Pokemon?) -> Void)? = nil) {
         // Use the serial queue while we access the fetch queue and completion handlers.
         serialAccessQueue.addOperation {
             // If a completion block has been provided, store it.
@@ -60,7 +60,7 @@ class AsyncFetcher {
      - Parameter identifier: The `UUID` of the object to return.
      - Returns: The 'DisplayData' that has previously been fetched or nil.
      */
-    func fetchedData(for identifier: String) -> PokemonDetails? {
+    func fetchedData(for identifier: String) -> Pokemon? {
         return cache.object(forKey: identifier as NSString)
     }
 
@@ -99,7 +99,7 @@ class AsyncFetcher {
             invokeCompletionHandlers(for: identifier, with: data)
         } else {
             // Enqueue a request for the object.
-            let operation = PokemonDetailsOperation(identifier: identifier, network: network)
+            let operation = PokemonOperation(identifier: identifier, network: network)
 
             // Set the operation's completion block to cache the fetched object and call the associated completion blocks.
             operation.completionBlock = { [weak operation] in
@@ -121,8 +121,8 @@ class AsyncFetcher {
      - Parameter identifier: The `UUID` of the operation to return.
      - Returns: The enqueued `ObjectFetcherOperation` or nil.
      */
-    private func operation(for identifier: String) -> PokemonDetailsOperation? {
-        for case let fetchOperation as PokemonDetailsOperation in fetchQueue.operations
+    private func operation(for identifier: String) -> PokemonOperation? {
+        for case let fetchOperation as PokemonOperation in fetchQueue.operations
             where !fetchOperation.isCancelled && fetchOperation.identifier == identifier {
             return fetchOperation
         }
@@ -138,7 +138,7 @@ class AsyncFetcher {
      - identifier: The `UUID` of the completion handlers to call.
      - object: The fetched object to pass when calling a completion handler.
      */
-    private func invokeCompletionHandlers(for identifier: String, with fetchedData: PokemonDetails) {
+    private func invokeCompletionHandlers(for identifier: String, with fetchedData: Pokemon) {
         let completionHandlers = self.completionHandlers[identifier, default: []]
         self.completionHandlers[identifier] = nil
 

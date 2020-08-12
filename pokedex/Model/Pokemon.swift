@@ -9,13 +9,15 @@
 import Foundation
 import UIKit
 
-struct Pokemon: Decodable {
+struct Reference: Decodable {
     let name: String
     let url: String
 }
 
-class PokemonDetails: Decodable {
+class Pokemon: Decodable {
+    let name: String
     var sprites: Sprites?
+    let stats: [Stat]?
 }
 
 struct Sprites: Decodable {
@@ -62,4 +64,20 @@ struct Sprites: Decodable {
         case backFemale = "back_female"
         case backShinyFemale = "back_shiny_female"
     }
+}
+
+struct Stat: Decodable {
+    let baseStat: Int
+    let effort: Int
+    let stat: Reference
+
+    enum CodingKeys: String, CodingKey {
+        case baseStat = "base_stat"
+        case effort, stat
+    }
+}
+
+struct Type: Decodable {
+    let slot: Int
+    let type: Reference
 }

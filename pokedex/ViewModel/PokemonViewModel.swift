@@ -13,7 +13,7 @@ class PokemonViewModel {
     private let network: Network
     private let limit = 500
 
-    var pokemonList = [Pokemon]()
+    var pokemonList = [Reference]()
     var delegate: PokemonViewModelDelegate?
     var pokemonResponse: PokemonListResponse?
 
