@@ -18,6 +18,7 @@ class Pokemon: Decodable {
     let name: String
     var sprites: Sprites?
     let stats: [Stat]?
+    let types: [Type]?
 }
 
 struct Sprites: Decodable {
@@ -64,6 +65,30 @@ struct Sprites: Decodable {
         case backFemale = "back_female"
         case backShinyFemale = "back_shiny_female"
     }
+
+    var gallery: [GalleryEntry] {
+        var gallery = [GalleryEntry]()
+        if let url = frontDefault {
+            gallery.append(GalleryEntry(name: "♂", imageUrl: url, image: frontDefaultImage))
+        }
+        if let url = frontShiny {
+            gallery.append(GalleryEntry(name: "Shiny ♂", imageUrl: url, image: frontShinyImage))
+        }
+        if let url = frontFemale {
+            gallery.append(GalleryEntry(name: "♀", imageUrl: url, image: frontFemaleImage))
+        }
+        if let url = frontShinyFemale {
+            gallery.append(GalleryEntry(name: "Shiny ♀", imageUrl: url, image: frontShinyFemaleImage))
+        }
+        return gallery
+    }
+
+}
+
+struct GalleryEntry {
+    let name: String
+    let imageUrl: String
+    var image: UIImage?
 }
 
 struct Stat: Decodable {

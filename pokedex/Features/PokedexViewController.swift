@@ -53,6 +53,9 @@ class PokedexViewController: UIViewController {
                 let identifier = pokemon.url
                 if let fetchedData = asyncFetcher.fetchedData(for: identifier) {
                     let controller = (segue.destination as! UINavigationController).topViewController as! PokemonViewController
+                    if controller.network == nil {
+                        controller.network = network
+                    }
                     controller.detailItem = fetchedData
                     controller.navigationItem.leftBarButtonItem = splitViewController?.displayModeButtonItem
                     controller.navigationItem.leftItemsSupplementBackButton = true

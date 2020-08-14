@@ -32,7 +32,7 @@ class PokemonCell: UICollectionViewCell {
          - data: An optional `Pokemon` object to display.
     */
     func configure(with pokemon: Pokemon?) {
-        label.text = pokemon?.name.capitalized
+        label.text = pokemon?.name.formatted()
         imageView.image = pokemon?.sprites?.frontDefaultImage
     }
     
