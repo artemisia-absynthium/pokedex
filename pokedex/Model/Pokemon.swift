@@ -69,18 +69,18 @@ struct Sprites: Decodable {
     var gallery: [GalleryEntry] {
         var gallery = [GalleryEntry]()
         if let url = frontDefault {
-            let name = frontFemale == nil ? "Default" : "♂"
+            let name = frontFemale == nil ? " Default " : " ♂"
             gallery.append(GalleryEntry(name: name, imageUrl: url, image: frontDefaultImage))
         }
         if let url = frontShiny {
-            let name = frontShinyFemale == nil ? "Shiny" : "Shiny ♂"
+            let name = frontShinyFemale == nil ? " Shiny " : " Shiny ♂"
             gallery.append(GalleryEntry(name: name, imageUrl: url, image: frontShinyImage))
         }
         if let url = frontFemale {
-            gallery.append(GalleryEntry(name: "♀", imageUrl: url, image: frontFemaleImage))
+            gallery.append(GalleryEntry(name: " ♀", imageUrl: url, image: frontFemaleImage))
         }
         if let url = frontShinyFemale {
-            gallery.append(GalleryEntry(name: "Shiny ♀", imageUrl: url, image: frontShinyFemaleImage))
+            gallery.append(GalleryEntry(name: " Shiny ♀", imageUrl: url, image: frontShinyFemaleImage))
         }
         return gallery
     }
