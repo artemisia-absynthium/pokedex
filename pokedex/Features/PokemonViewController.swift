@@ -26,6 +26,8 @@ class PokemonViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        pokemonImage.layer.cornerRadius = 15
+        pokemonImage.backgroundColor = .systemTeal
         configureView()
     }
     
@@ -35,23 +37,36 @@ class PokemonViewController: UIViewController {
             pokemonImage.image = detail.sprites?.frontDefaultImage
 
             buildGalleryButtonsView(gallery: detail.sprites?.gallery ?? [])
+            buildTypesView(types: detail.types ?? [])
 
             var statsText = [String]()
             for stat in detail.stats ?? [] {
                 statsText.append("\(stat.stat.name.formatted()): \(stat.baseStat)")
             }
             statsLabel.text = statsText.joined(separator: "\n")
+        }
+    }
 
-            let view = UIStackView()
-            view.axis = .vertical
-            view.alignment = .center
-            view.spacing = 4
-            stackView.insertArrangedSubview(view, at: 1)
-            for type in detail.types?.sorted(by: { t1, t2 in t1.slot < t2.slot }) ?? [] {
-                let label = UILabel()
-                label.text = type.type.name.formatted()
-                view.addArrangedSubview(label)
-            }
+    private func buildTypesView(types: [Type]) {
+        let view = UIStackView()
+        view.axis = .vertical
+        view.alignment = .center
+        view.spacing = 4
+        stackView.insertArrangedSubview(view, at: 1)
+        for type in types.sorted(by: { t1, t2 in t1.slot < t2.slot }) {
+            let container = UIView()
+            container.backgroundColor = type.color
+            container.layer.cornerRadius = 15
+            let label = UILabel()
+            label.textColor = .white
+            container.addSubview(label)
+            label.translatesAutoresizingMaskIntoConstraints = false
+            container.topAnchor.constraint(equalTo: label.topAnchor, constant: -4).isActive = true
+            container.leadingAnchor.constraint(equalTo: label.leadingAnchor, constant: -12).isActive = true
+            container.trailingAnchor.constraint(equalTo: label.trailingAnchor, constant: 12).isActive = true
+            container.bottomAnchor.constraint(equalTo: label.bottomAnchor, constant: 4).isActive = true
+            label.text = type.type.name.formatted()
+            view.addArrangedSubview(container)
         }
     }
 
@@ -66,11 +81,11 @@ class PokemonViewController: UIViewController {
         for (offset, var entry) in gallery.enumerated() {
             let button = UIButton(type: .system)
             button.setTitle(entry.name, for: [])
-            button.titleLabel?.font = .systemFont(ofSize: 20)
+            button.titleLabel?.font = .systemFont(ofSize: 18)
             button.contentEdgeInsets = UIEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
             button.setTitleColor(.white, for: [])
             button.backgroundColor = entry.color
-            button.layer.cornerRadius = 12
+            button.layer.cornerRadius = 15
             button.tag = offset
             button.addTarget(self, action: #selector(setImage(_:)), for: .touchUpInside)
             if entry.image != nil {
