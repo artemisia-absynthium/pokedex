@@ -13,7 +13,9 @@ class PokemonViewController: UIViewController {
     @IBOutlet weak var pokemonImage: UIImageView!
     @IBOutlet weak var stackView: UIStackView!
     @IBOutlet weak var statsLabel: UILabel!
-
+    @IBOutlet weak var statsContainer: UIView!
+    @IBOutlet weak var statsPointsLabel: UILabel!
+    
     var gallery: [Int : GalleryEntry] = [:]
     var detailItem: Pokemon? {
         didSet {
@@ -27,7 +29,7 @@ class PokemonViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         pokemonImage.layer.cornerRadius = 15
-        pokemonImage.backgroundColor = .systemTeal
+        statsContainer.layer.cornerRadius = 15
         configureView()
     }
     
@@ -38,13 +40,19 @@ class PokemonViewController: UIViewController {
 
             buildGalleryButtonsView(gallery: detail.sprites?.gallery ?? [])
             buildTypesView(types: detail.types ?? [])
-
-            var statsText = [String]()
-            for stat in detail.stats ?? [] {
-                statsText.append("\(stat.stat.name.formatted()): \(stat.baseStat)")
-            }
-            statsLabel.text = statsText.joined(separator: "\n")
+            buildStatsView(stats: detail.stats ?? [])
         }
+    }
+
+    private func buildStatsView(stats: [Stat]) {
+        var statsText = [String]()
+        var statsPointsText = [String]()
+        for stat in stats {
+            statsText.append("\(stat.stat.name.formatted()):")
+            statsPointsText.append("\(stat.baseStat)")
+        }
+        statsLabel.text = statsText.joined(separator: "\n")
+        statsPointsLabel.text = statsPointsText.joined(separator: "\n")
     }
 
     private func buildTypesView(types: [Type]) {
