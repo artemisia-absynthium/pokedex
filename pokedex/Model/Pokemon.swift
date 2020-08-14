@@ -70,17 +70,17 @@ struct Sprites: Decodable {
         var gallery = [GalleryEntry]()
         if let url = frontDefault {
             let name = frontFemale == nil ? " Default " : " ♂"
-            gallery.append(GalleryEntry(name: name, imageUrl: url, image: frontDefaultImage))
+            gallery.append(GalleryEntry(name: name, imageUrl: url, image: frontDefaultImage, color: .male))
         }
         if let url = frontShiny {
             let name = frontShinyFemale == nil ? " Shiny " : " Shiny ♂"
-            gallery.append(GalleryEntry(name: name, imageUrl: url, image: frontShinyImage))
+            gallery.append(GalleryEntry(name: name, imageUrl: url, image: frontShinyImage, color: .maleShiny))
         }
         if let url = frontFemale {
-            gallery.append(GalleryEntry(name: " ♀", imageUrl: url, image: frontFemaleImage))
+            gallery.append(GalleryEntry(name: " ♀", imageUrl: url, image: frontFemaleImage, color: .female))
         }
         if let url = frontShinyFemale {
-            gallery.append(GalleryEntry(name: " Shiny ♀", imageUrl: url, image: frontShinyFemaleImage))
+            gallery.append(GalleryEntry(name: " Shiny ♀", imageUrl: url, image: frontShinyFemaleImage, color: .femaleShiny))
         }
         return gallery
     }
@@ -91,6 +91,7 @@ struct GalleryEntry {
     let name: String
     let imageUrl: String
     var image: UIImage?
+    let color: UIColor
 }
 
 struct Stat: Decodable {

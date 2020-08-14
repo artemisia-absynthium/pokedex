@@ -33,7 +33,7 @@ class PokemonViewController: UIViewController {
                 button.titleLabel?.font = .systemFont(ofSize: 20)
                 button.contentEdgeInsets = UIEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
                 button.setTitleColor(.white, for: [])
-                button.backgroundColor = .blue
+                button.backgroundColor = entry.color
                 button.layer.cornerRadius = 12
                 button.tag = offset
                 button.addTarget(self, action: #selector(setImage(_:)), for: .touchUpInside)
