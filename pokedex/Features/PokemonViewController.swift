@@ -15,46 +15,26 @@ class PokemonViewController: UIViewController {
     @IBOutlet weak var statsLabel: UILabel!
 
     var gallery: [Int : GalleryEntry] = [:]
+    var detailItem: Pokemon? {
+        didSet {
+            if isViewLoaded {
+                configureView()
+            }
+        }
+    }
+    var network: Network?
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        configureView()
+    }
     
     func configureView() {
         if let detail = detailItem {
             navigationItem.title = detail.name.formatted()
             pokemonImage.image = detail.sprites?.frontDefaultImage
 
-            let galleryView = UIStackView(frame: CGRect(x: 0, y: 0, width: stackView.frame.width, height: 180))
-            galleryView.axis = .horizontal
-            galleryView.alignment = .fill
-            galleryView.distribution = .fill
-            galleryView.spacing = 4
-            stackView.insertArrangedSubview(galleryView, at: 0)
-            for (offset, var entry) in (detail.sprites?.gallery ?? []).enumerated() {
-                let button = UIButton(type: .system)
-                button.setTitle(entry.name, for: [])
-                button.titleLabel?.font = .systemFont(ofSize: 20)
-                button.contentEdgeInsets = UIEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
-                button.setTitleColor(.white, for: [])
-                button.backgroundColor = entry.color
-                button.layer.cornerRadius = 12
-                button.tag = offset
-                button.addTarget(self, action: #selector(setImage(_:)), for: .touchUpInside)
-                if entry.image != nil {
-                    self.gallery[offset] = entry
-                    galleryView.addArrangedSubview(button)
-                } else {
-                    network?.fetchImage(urlString: entry.imageUrl, completion: { result in
-                        DispatchQueue.main.async {
-                            switch result {
-                            case .success(let image):
-                                entry.image = image
-                            case .failure:
-                                entry.image = UIImage(named: "slash.circle")
-                            }
-                            self.gallery[offset] = entry
-                            galleryView.addArrangedSubview(button)
-                        }
-                    })
-                }
-            }
+            buildGalleryButtonsView(gallery: detail.sprites?.gallery ?? [])
 
             var statsText = [String]()
             for stat in detail.stats ?? [] {
@@ -75,6 +55,44 @@ class PokemonViewController: UIViewController {
         }
     }
 
+    /// This and the UIImageView above should be abstracted to a custom UIView (e.g. GalleryView) to remove gallery logic from this UIViewController
+    private func buildGalleryButtonsView(gallery: [GalleryEntry]) {
+        let galleryButtonsView = UIStackView(frame: CGRect(x: 0, y: 0, width: stackView.frame.width, height: 180))
+        galleryButtonsView.axis = .horizontal
+        galleryButtonsView.alignment = .fill
+        galleryButtonsView.distribution = .fill
+        galleryButtonsView.spacing = 4
+        stackView.insertArrangedSubview(galleryButtonsView, at: 0)
+        for (offset, var entry) in gallery.enumerated() {
+            let button = UIButton(type: .system)
+            button.setTitle(entry.name, for: [])
+            button.titleLabel?.font = .systemFont(ofSize: 20)
+            button.contentEdgeInsets = UIEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
+            button.setTitleColor(.white, for: [])
+            button.backgroundColor = entry.color
+            button.layer.cornerRadius = 12
+            button.tag = offset
+            button.addTarget(self, action: #selector(setImage(_:)), for: .touchUpInside)
+            if entry.image != nil {
+                self.gallery[offset] = entry
+                galleryButtonsView.addArrangedSubview(button)
+            } else {
+                network?.fetchImage(urlString: entry.imageUrl, completion: { result in
+                    DispatchQueue.main.async {
+                        switch result {
+                        case .success(let image):
+                            entry.image = image
+                        case .failure:
+                            entry.image = UIImage(named: "slash.circle")
+                        }
+                        self.gallery[offset] = entry
+                        galleryButtonsView.addArrangedSubview(button)
+                    }
+                })
+            }
+        }
+    }
+
     @objc func setImage(_ sender: UIButton) {
         UIView.transition(
             with: self.pokemonImage,
@@ -85,20 +103,6 @@ class PokemonViewController: UIViewController {
             },
             completion: nil)
     }
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        configureView()
-    }
-
-    var detailItem: Pokemon? {
-        didSet {
-            if isViewLoaded {
-                configureView()
-            }
-        }
-    }
-    var network: Network?
 
     
 }
