@@ -11,15 +11,15 @@ import Foundation
 class PokemonViewModel {
 
     private let network: Network
-    private let limit = 500
+    private let limit = 1000
 
-    var pokemonList = [Reference]()
+    var pokemonList = [NamedApiResource]()
     var delegate: PokemonViewModelDelegate?
-    var pokemonResponse: PokemonListResponse?
+    var pokemonResponse: PokemonSpeciesListResponse?
 
     private var completionHandlers = [String: [() -> Void]]()
 
-    lazy private var completion: (Result<PokemonListResponse, Error>) -> Void = { result in
+    lazy private var completion: (Result<PokemonSpeciesListResponse, Error>) -> Void = { result in
         switch result {
         case .success(let pokemonResponse):
             self.pokemonResponse = pokemonResponse
@@ -35,7 +35,7 @@ class PokemonViewModel {
     }
 
     func nextPage(completion: @escaping () -> Void) {
-        let next = pokemonResponse?.next ?? "https://pokeapi.co/api/v2/pokemon?limit=\(limit)"
+        let next = pokemonResponse?.next ?? "https://pokeapi.co/api/v2/pokemon-species?limit=\(limit)"
         guard completionHandlers[next] == nil else {
             completionHandlers[next]?.append(completion)
             return

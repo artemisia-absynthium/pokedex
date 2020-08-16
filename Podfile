@@ -3,7 +3,8 @@ platform :ios, '10.0'
 target 'pokedex' do
   use_frameworks!
 
-  pod 'Moya'
+  pod 'RxSwift', '~> 5'
+  pod 'RxCocoa', '~> 5'
 
   target 'pokedexTests' do
     inherit! :search_paths

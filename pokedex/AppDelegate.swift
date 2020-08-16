@@ -12,6 +12,7 @@ import CoreData
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
+    static var network = Network()
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {

@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import RxSwift
 
 class PokemonCell: UICollectionViewCell {
 
@@ -17,6 +18,8 @@ class PokemonCell: UICollectionViewCell {
 
     /// The Pokemon URL for the pokemon this cell is presenting.
     var representedIdentifier: String?
+
+    var disposeBag = DisposeBag()
 
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -31,9 +34,36 @@ class PokemonCell: UICollectionViewCell {
      - Parameters:
          - data: An optional `Pokemon` object to display.
     */
-    func configure(with pokemon: Pokemon?) {
+    func configure(with pokemon: PokemonSpeciesResponse?) {
+        disposeBag = DisposeBag()
         label.text = pokemon?.name.formatted()
-        imageView.image = pokemon?.sprites?.frontDefaultImage
+        imageView.image = nil
+        var defaultForm = pokemon?.varieties.first(where: { variety in
+            variety.isDefault
+        })
+        defaultForm?.loadedPokemon
+            .observeOn(MainScheduler.instance)
+            .subscribe({ event in
+                switch event {
+                case .next(let pokemon):
+                    pokemon.sprites?.frontDefaultImage?
+                        .observeOn(MainScheduler.instance)
+                        .subscribe({ event in
+                            switch event {
+                            case .next(let image):
+                                self.imageView.image = image
+                            case .error:
+                                self.imageView.image = UIImage(named: "slash.circle")
+                            case .completed:
+                                return
+                            }
+                        }).disposed(by: self.disposeBag)
+                case .error:
+                    self.imageView.image = UIImage(named: "slash.circle")
+                case .completed:
+                    return
+                }
+            }).disposed(by: disposeBag)
     }
     
 }

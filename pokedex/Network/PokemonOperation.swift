@@ -17,7 +17,7 @@ class PokemonOperation: Operation {
     let network: Network
 
     /// The `Pokemon` that has been fetched by this operation.
-    private(set) var fetchedData: Pokemon?
+    private(set) var fetchedData: PokemonSpeciesResponse?
 
     // MARK: Initialization
 
@@ -30,25 +30,12 @@ class PokemonOperation: Operation {
 
     override func main() {
         let semaphore = DispatchSemaphore(value: 0)
-        network.pokemon(urlString: identifier) { result in
+        network.pokemonSpecies(urlString: identifier) { result in
             guard !self.isCancelled else { return }
             switch result {
-            case .success(let pokemon):
-                self.fetchedData = pokemon
-                if let thumb = pokemon.sprites?.frontDefault {
-                    self.network.fetchImage(urlString: thumb) { result in
-                        switch result {
-                        case .success(let image):
-                            self.fetchedData?.sprites?.frontDefaultImage = image
-                            semaphore.signal()
-                        case .failure:
-                            semaphore.signal()
-                        }
-                    }
-                } else {
-                    self.fetchedData?.sprites?.frontDefaultImage = UIImage(named: "slash.circle")
-                    semaphore.signal()
-                }
+            case .success(let pokemonSpeciesResponse):
+                self.fetchedData = pokemonSpeciesResponse
+                semaphore.signal()
             case .failure:
                 self.fetchedData = nil
                 semaphore.signal()

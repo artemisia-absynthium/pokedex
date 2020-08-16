@@ -17,7 +17,7 @@ class PokemonViewController: UIViewController {
     @IBOutlet weak var statsPointsLabel: UILabel!
     
     var gallery: [Int : GalleryEntry] = [:]
-    var detailItem: Pokemon? {
+    var detailItem: PokemonSpeciesResponse? {
         didSet {
             if isViewLoaded {
                 configureView()
@@ -36,11 +36,13 @@ class PokemonViewController: UIViewController {
     func configureView() {
         if let detail = detailItem {
             navigationItem.title = detail.name.formatted()
-            pokemonImage.image = detail.sprites?.frontDefaultImage
+//            pokemonImage.image = detail.varieties.first(where: { variety in
+//                variety.isDefault
+//            })?.sprites?.frontDefaultImage
 
-            buildGalleryButtonsView(gallery: detail.sprites?.gallery ?? [])
-            buildTypesView(types: detail.types ?? [])
-            buildStatsView(stats: detail.stats ?? [])
+//            buildGalleryButtonsView(gallery: detail.sprites?.gallery ?? [])
+//            buildTypesView(types: detail.types ?? [])
+//            buildStatsView(stats: detail.stats ?? [])
         }
     }
 
@@ -96,23 +98,23 @@ class PokemonViewController: UIViewController {
             button.layer.cornerRadius = 15
             button.tag = offset
             button.addTarget(self, action: #selector(setImage(_:)), for: .touchUpInside)
-            if entry.image != nil {
-                self.gallery[offset] = entry
-                galleryButtonsView.addArrangedSubview(button)
-            } else {
-                network?.fetchImage(urlString: entry.imageUrl, completion: { result in
-                    DispatchQueue.main.async {
-                        switch result {
-                        case .success(let image):
-                            entry.image = image
-                        case .failure:
-                            entry.image = UIImage(named: "slash.circle")
-                        }
-                        self.gallery[offset] = entry
-                        galleryButtonsView.addArrangedSubview(button)
-                    }
-                })
-            }
+//            if entry.image != nil {
+//                self.gallery[offset] = entry
+//                galleryButtonsView.addArrangedSubview(button)
+//            } else {
+//                network?.fetchImage(urlString: entry.imageUrl, completion: { result in
+//                    DispatchQueue.main.async {
+//                        switch result {
+//                        case .success(let image):
+//                            entry.image = image
+//                        case .failure:
+//                            entry.image = UIImage(named: "slash.circle")
+//                        }
+//                        self.gallery[offset] = entry
+//                        galleryButtonsView.addArrangedSubview(button)
+//                    }
+//                })
+//            }
         }
     }
 
