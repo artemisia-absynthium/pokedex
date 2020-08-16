@@ -7,16 +7,17 @@
 //
 
 import UIKit
+import RxSwift
 
 class PokemonViewController: UIViewController {
 
     @IBOutlet weak var pokemonImage: UIImageView!
     @IBOutlet weak var stackView: UIStackView!
+    @IBOutlet weak var typesLabel: UILabel!
     @IBOutlet weak var statsLabel: UILabel!
     @IBOutlet weak var statsContainer: UIView!
     @IBOutlet weak var statsPointsLabel: UILabel!
-    
-    var gallery: [Int : GalleryEntry] = [:]
+
     var detailItem: PokemonSpeciesResponse? {
         didSet {
             if isViewLoaded {
@@ -24,7 +25,23 @@ class PokemonViewController: UIViewController {
             }
         }
     }
-    var network: Network?
+    private var disposeBag = DisposeBag()
+    private var gallery: [Int : UIImage] = [:]
+    private var forms: [String : PokemonResponse] = [:]
+    private var selectedForm: String? {
+        didSet {
+            guard let selectedForm = selectedForm, let form = forms[selectedForm] else {
+                return
+            }
+            buildTypesView(types: form.types)
+            buildStatsView(stats: form.stats)
+        }
+    }
+    private var selectedImage: GalleryID = .frontDefault {
+        didSet {
+            pokemonImage.image = gallery[selectedImage.rawValue]
+        }
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -34,15 +51,71 @@ class PokemonViewController: UIViewController {
     }
     
     func configureView() {
-        if let detail = detailItem {
+        disposeBag = DisposeBag()
+        selectedImage = .frontDefault
+        selectedForm = nil
+        pokemonImage.image = nil
+        gallery.removeAll()
+        forms.removeAll()
+        if let detail = detailItem { // TODO: Else show empty state
             navigationItem.title = detail.name.formatted()
-//            pokemonImage.image = detail.varieties.first(where: { variety in
-//                variety.isDefault
-//            })?.sprites?.frontDefaultImage
+            let defaultForm = detail.varieties.first { $0.isDefault }
+            selectedForm = defaultForm?.pokemon.name
+            let imageClosure: (PokemonResponse, Event<UIImage>, GalleryID) -> Void = { pokemon, event, id in
+                switch event {
+                case .next(let image):
+                    self.gallery[id.rawValue] = image
+                case .error:
+                    self.gallery[id.rawValue] = UIImage(named: "slash.circle")
+                case .completed:
+                    return
+                }
+                if self.selectedForm == pokemon.name && self.selectedImage == id {
+                    self.pokemonImage.image = self.gallery[id.rawValue]
+                }
+            }
+            for var variety in detail.varieties {
+                variety.loadedPokemon
+                    .observeOn(MainScheduler.instance)
+                    .subscribe({ event in
+                        switch event {
+                        case .next(let pokemon):
+                            self.forms[pokemon.name] = pokemon
+                            if self.selectedForm == pokemon.name {
+                                self.buildTypesView(types: pokemon.types)
+                                self.buildStatsView(stats: pokemon.stats)
+                            }
+                            pokemon.sprites?.frontDefaultImage?.observeOn(MainScheduler.instance)
+                                .subscribe({ event in
+                                    imageClosure(pokemon, event, .frontDefault)
+                                })
+                                .disposed(by: self.disposeBag)
+                            pokemon.sprites?.frontFemaleImage?.observeOn(MainScheduler.instance)
+                                .subscribe({ event in
+                                    imageClosure(pokemon, event, .frontFemale)
+                                })
+                                .disposed(by: self.disposeBag)
+                            pokemon.sprites?.frontShinyImage?.observeOn(MainScheduler.instance)
+                                .subscribe({ event in
+                                    imageClosure(pokemon, event, .frontShiny)
+                                })
+                                .disposed(by: self.disposeBag)
+                            pokemon.sprites?.frontShinyFemaleImage?.observeOn(MainScheduler.instance)
+                                .subscribe({ event in
+                                    imageClosure(pokemon, event, .frontShinyFemale)
+                                })
+                                .disposed(by: self.disposeBag)
+                        case .error:
+                            // TODO: Show error
+                            return
+                        case .completed:
+                            return
+                        }
+                    })
+                    .disposed(by: disposeBag)
+            }
 
 //            buildGalleryButtonsView(gallery: detail.sprites?.gallery ?? [])
-//            buildTypesView(types: detail.types ?? [])
-//            buildStatsView(stats: detail.stats ?? [])
         }
     }
 
@@ -58,26 +131,8 @@ class PokemonViewController: UIViewController {
     }
 
     private func buildTypesView(types: [Type]) {
-        let view = UIStackView()
-        view.axis = .vertical
-        view.alignment = .center
-        view.spacing = 4
-        stackView.insertArrangedSubview(view, at: 1)
-        for type in types.sorted(by: { t1, t2 in t1.slot < t2.slot }) {
-            let container = UIView()
-            container.backgroundColor = type.color
-            container.layer.cornerRadius = 15
-            let label = UILabel()
-            label.textColor = .white
-            container.addSubview(label)
-            label.translatesAutoresizingMaskIntoConstraints = false
-            container.topAnchor.constraint(equalTo: label.topAnchor, constant: -4).isActive = true
-            container.leadingAnchor.constraint(equalTo: label.leadingAnchor, constant: -12).isActive = true
-            container.trailingAnchor.constraint(equalTo: label.trailingAnchor, constant: 12).isActive = true
-            container.bottomAnchor.constraint(equalTo: label.bottomAnchor, constant: 4).isActive = true
-            label.text = type.type.name.formatted()
-            view.addArrangedSubview(container)
-        }
+        let typesString = types.map { $0.type.name.uppercased() }.joined(separator: "/")
+        typesLabel.text = "TYPE: \(typesString)"
     }
 
     /// This and the UIImageView above should be abstracted to a custom UIView (e.g. GalleryView) to remove gallery logic from this UIViewController
@@ -124,7 +179,7 @@ class PokemonViewController: UIViewController {
             duration: 0.3,
             options: .transitionCrossDissolve,
             animations: {
-                self.pokemonImage.image = self.gallery[sender.tag]?.image
+                self.pokemonImage.image = self.gallery[sender.tag]
             },
             completion: nil)
     }

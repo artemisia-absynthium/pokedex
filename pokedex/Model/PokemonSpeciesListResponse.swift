@@ -10,6 +10,13 @@ import Foundation
 import UIKit
 import RxSwift
 
+enum GalleryID: Int {
+    case frontDefault = 0
+    case frontFemale = 1
+    case frontShiny = 2
+    case frontShinyFemale = 3
+}
+
 struct PokemonSpeciesListResponse: Decodable {
     let count: Int
     let next: String?
@@ -145,47 +152,4 @@ struct Stat: Decodable {
 struct Type: Decodable {
     let slot: Int
     let type: NamedApiResource
-
-    var color: UIColor {
-        switch type.name {
-        case "fighting":
-            return .brown
-        case "flying":
-            return .systemTeal
-        case "poison":
-            return .purple
-        case "ground":
-            return .brown
-        case "rock":
-            return .darkGray
-        case "bug":
-            return .green
-        case "ghost":
-            return .black
-        case "steel":
-            return .lightGray
-        case "fire":
-            return .red
-        case "water":
-            return .blue
-        case "grass":
-            return .green
-        case "electric":
-            return .orange
-        case "psychic":
-            return .systemPink
-        case "ice":
-            return .cyan
-        case "dragon":
-            return .red
-        case "dark":
-            return .black
-        case "fairy":
-            return .systemPink
-        case "shadow":
-            return .darkGray
-        default:
-            return .gray
-        }
-    }
 }
