@@ -10,6 +10,6 @@ import Foundation
 
 extension String {
     func formatted() -> String {
-        return self.replacingOccurrences(of: "-", with: " ").capitalized
+        return self.replacingOccurrences(of: "-", with: " ").trimmingCharacters(in: .whitespaces).capitalized
     }
 }

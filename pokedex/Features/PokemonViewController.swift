@@ -26,7 +26,7 @@ class PokemonViewController: UIViewController {
         }
     }
     private var disposeBag = DisposeBag()
-    private var gallery: [Int : UIImage] = [:]
+    private var gallery: [String : [GalleryID : UIImage]] = [:]
     private var forms: [String : PokemonResponse] = [:]
     private var selectedForm: String? {
         didSet {
@@ -39,7 +39,11 @@ class PokemonViewController: UIViewController {
     }
     private var selectedImage: GalleryID = .frontDefault {
         didSet {
-            pokemonImage.image = gallery[selectedImage.rawValue]
+            guard let selectedForm = selectedForm else {
+                pokemonImage.image = nil
+                return
+            }
+            pokemonImage.image = gallery[selectedForm]?[selectedImage]
         }
     }
 
@@ -64,14 +68,14 @@ class PokemonViewController: UIViewController {
             let imageClosure: (PokemonResponse, Event<UIImage>, GalleryID) -> Void = { pokemon, event, id in
                 switch event {
                 case .next(let image):
-                    self.gallery[id.rawValue] = image
+                    self.gallery[pokemon.name, default: [:]][id] = image
                 case .error:
-                    self.gallery[id.rawValue] = UIImage(named: "slash.circle")
+                    self.gallery[pokemon.name, default: [:]][id] = UIImage(named: "slash.circle")!
                 case .completed:
                     return
                 }
                 if self.selectedForm == pokemon.name && self.selectedImage == id {
-                    self.pokemonImage.image = self.gallery[id.rawValue]
+                    self.pokemonImage.image = self.gallery[pokemon.name]?[id]
                 }
             }
             for var variety in detail.varieties {
@@ -114,8 +118,7 @@ class PokemonViewController: UIViewController {
                     })
                     .disposed(by: disposeBag)
             }
-
-//            buildGalleryButtonsView(gallery: detail.sprites?.gallery ?? [])
+            buildGalleryButtonsView()
         }
     }
 
@@ -135,51 +138,77 @@ class PokemonViewController: UIViewController {
         typesLabel.text = "TYPE: \(typesString)"
     }
 
-    /// This and the UIImageView above should be abstracted to a custom UIView (e.g. GalleryView) to remove gallery logic from this UIViewController
-    private func buildGalleryButtonsView(gallery: [GalleryEntry]) {
-        let galleryButtonsView = UIStackView(frame: CGRect(x: 0, y: 0, width: stackView.frame.width, height: 180))
-        galleryButtonsView.axis = .horizontal
-        galleryButtonsView.alignment = .fill
-        galleryButtonsView.distribution = .fill
-        galleryButtonsView.spacing = 4
-        stackView.insertArrangedSubview(galleryButtonsView, at: 0)
-        for (offset, var entry) in gallery.enumerated() {
-            let button = UIButton(type: .system)
-            button.setTitle(entry.name, for: [])
-            button.titleLabel?.font = .systemFont(ofSize: 18)
-            button.contentEdgeInsets = UIEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
-            button.setTitleColor(.white, for: [])
-            button.backgroundColor = entry.color
-            button.layer.cornerRadius = 15
-            button.tag = offset
-            button.addTarget(self, action: #selector(setImage(_:)), for: .touchUpInside)
-//            if entry.image != nil {
-//                self.gallery[offset] = entry
-//                galleryButtonsView.addArrangedSubview(button)
-//            } else {
-//                network?.fetchImage(urlString: entry.imageUrl, completion: { result in
-//                    DispatchQueue.main.async {
-//                        switch result {
-//                        case .success(let image):
-//                            entry.image = image
-//                        case .failure:
-//                            entry.image = UIImage(named: "slash.circle")
-//                        }
-//                        self.gallery[offset] = entry
-//                        galleryButtonsView.addArrangedSubview(button)
-//                    }
-//                })
-//            }
+    private func buildGalleryButtonsView() {
+        guard let detail = detailItem else {
+            return
+        }
+        let container = UIStackView(frame: CGRect(x: 0, y: 0, width: stackView.frame.width, height: 180))
+        container.spacing = 16
+        stackView.insertArrangedSubview(container, at: 0)
+        let formsNamesContainer = UIStackView(frame: CGRect(x: 0, y: 0, width: stackView.frame.width / 3, height: 180))
+        formsNamesContainer.axis = .vertical
+        formsNamesContainer.spacing = 8
+        formsNamesContainer.distribution = .equalSpacing
+        if detail.hasMultipleForms {
+            container.addArrangedSubview(formsNamesContainer)
+        }
+        let buttonsContainer = UIStackView(frame: CGRect(x: 0, y: 0, width: stackView.frame.width, height: 180))
+        buttonsContainer.axis = .vertical
+        buttonsContainer.spacing = 8
+        container.addArrangedSubview(buttonsContainer)
+        detail.varieties.enumerated().forEach { offset, variety in
+            let galleryButtonsView = UIStackView(frame: CGRect(x: 0, y: 0, width: stackView.frame.width, height: 180))
+            galleryButtonsView.spacing = 4
+            buttonsContainer.addArrangedSubview(galleryButtonsView)
+            let buttonFrontDefault = createGalleryButton(pokemon: detail, variety: variety, id: .frontDefault)
+            galleryButtonsView.addArrangedSubview(buttonFrontDefault)
+            let buttonFrontShiny = createGalleryButton(pokemon: detail, variety: variety, id: .frontShiny)
+            galleryButtonsView.addArrangedSubview(buttonFrontShiny)
+            if detail.hasGenderDifferences {
+                let buttonFrontFemale = createGalleryButton(pokemon: detail, variety: variety, id: .frontFemale)
+                galleryButtonsView.addArrangedSubview(buttonFrontFemale)
+                let buttonFrontShinyFemale = createGalleryButton(pokemon: detail, variety: variety, id: .frontShinyFemale)
+                galleryButtonsView.addArrangedSubview(buttonFrontShinyFemale)
+            }
+            if detail.hasMultipleForms {
+                var varietyName = variety.pokemon.name.replacingOccurrences(of: detail.name, with: "").formatted()
+                if varietyName.isEmpty {
+                    varietyName = NSLocalizedString("Normal", comment: "Default form name")
+                }
+                let label = UILabel()
+                label.textAlignment = .right
+                label.text = varietyName
+                formsNamesContainer.addArrangedSubview(label)
+                label.translatesAutoresizingMaskIntoConstraints = false
+                label.heightAnchor.constraint(equalTo: galleryButtonsView.heightAnchor).isActive = true
+            }
         }
     }
 
+    private func createGalleryButton(pokemon: PokemonSpeciesResponse, variety: PokemonVarietiesResponse, id: GalleryID) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setTitle(id.name(hasGenderDifferences: pokemon.hasGenderDifferences), for: [])
+        button.titleLabel?.font = .systemFont(ofSize: 18)
+        button.contentEdgeInsets = UIEdgeInsets(top: 4, left: 8, bottom: 4, right: 8)
+        button.setTitleColor(.white, for: [])
+        button.layer.cornerRadius = 15
+        button.backgroundColor = id.color
+        button.accessibilityIdentifier = variety.pokemon.name
+        button.tag = id.rawValue
+        button.addTarget(self, action: #selector(setImage(_:)), for: .touchUpInside)
+        return button
+    }
+
     @objc func setImage(_ sender: UIButton) {
+        guard let varietyName = sender.accessibilityIdentifier, let id = GalleryID(rawValue: sender.tag) else {
+            return
+        }
         UIView.transition(
             with: self.pokemonImage,
             duration: 0.3,
             options: .transitionCrossDissolve,
             animations: {
-                self.pokemonImage.image = self.gallery[sender.tag]
+                self.pokemonImage.image = self.gallery[varietyName]?[id] ?? UIImage(named: "slash.circle")
             },
             completion: nil)
     }

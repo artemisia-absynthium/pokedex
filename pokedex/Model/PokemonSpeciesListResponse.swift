@@ -15,6 +15,32 @@ enum GalleryID: Int {
     case frontFemale = 1
     case frontShiny = 2
     case frontShinyFemale = 3
+
+    func name(hasGenderDifferences: Bool) -> String {
+        switch self {
+        case .frontDefault:
+            return hasGenderDifferences ? " ♂" : " Default "
+        case .frontFemale:
+            return " ♀"
+        case .frontShiny:
+            return hasGenderDifferences ? " ♂⭑" : " ⭑"
+        case .frontShinyFemale:
+            return " ♀⭑"
+        }
+    }
+
+    var color: UIColor {
+        switch self {
+        case .frontDefault:
+            return .male
+        case .frontFemale:
+            return .female
+        case .frontShiny:
+            return .maleShiny
+        case .frontShinyFemale:
+            return .femaleShiny
+        }
+    }
 }
 
 struct PokemonSpeciesListResponse: Decodable {
@@ -37,6 +63,10 @@ class PokemonSpeciesResponse: Decodable {
 //    let evolutionChain
 //    let names // for localization
     let varieties: [PokemonVarietiesResponse]
+
+    var hasMultipleForms: Bool {
+        return varieties.count > 1
+    }
 
     enum CodingKeys: String, CodingKey {
         case name, order, varieties
@@ -109,33 +139,6 @@ struct SpritesResponse: Decodable {
         case frontFemale = "front_female"
         case frontShinyFemale = "front_shiny_female"
     }
-
-    var gallery: [GalleryEntry] {
-        var gallery = [GalleryEntry]()
-//        if let url = frontDefault {
-//            let name = frontFemale == nil ? " Default " : " ♂"
-//            gallery.append(GalleryEntry(name: name, imageUrl: url, image: frontDefaultImage, color: .male))
-//        }
-//        if let url = frontShiny {
-//            let name = frontShinyFemale == nil ? " Shiny " : " Shiny ♂"
-//            gallery.append(GalleryEntry(name: name, imageUrl: url, image: frontShinyImage, color: .maleShiny))
-//        }
-//        if let url = frontFemale {
-//            gallery.append(GalleryEntry(name: " ♀", imageUrl: url, image: frontFemaleImage, color: .female))
-//        }
-//        if let url = frontShinyFemale {
-//            gallery.append(GalleryEntry(name: " Shiny ♀", imageUrl: url, image: frontShinyFemaleImage, color: .femaleShiny))
-//        }
-        return gallery
-    }
-
-}
-
-struct GalleryEntry {
-    let name: String
-    let imageUrl: String
-    var image: UIImage?
-    let color: UIColor
 }
 
 struct Stat: Decodable {
