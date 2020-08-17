@@ -17,7 +17,9 @@ class PokemonViewController: UIViewController {
     @IBOutlet weak var statsLabel: UILabel!
     @IBOutlet weak var statsContainer: UIView!
     @IBOutlet weak var statsPointsLabel: UILabel!
-
+    @IBOutlet weak var emptyStateView: UIView!
+    @IBOutlet weak var emptyStateLabel: UILabel!
+    
     var detailItem: PokemonSpeciesResponse? {
         didSet {
             if isViewLoaded {
@@ -59,6 +61,8 @@ class PokemonViewController: UIViewController {
     }
     
     func configureView() {
+        emptyStateLabel.text = NSLocalizedString("EmptyState", value: "Welcome to the Pokédex, choose a Pokémon to see its details", comment: "Empty state default message")
+        emptyStateView.isHidden = detailItem != nil
         disposeBag = DisposeBag()
         selectedImage = .frontDefault
         selectedForm = nil
