@@ -21,6 +21,12 @@ class PokedexViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        let gradient = CAGradientLayer()
+        gradient.frame = view.frame
+        gradient.colors = [0x20E2D7.cgColor, 0xF9FEA5.cgColor]
+        view.layer.insertSublayer(gradient, at: 0)
+
         viewModel.delegate = self
         collectionView.delegate = self
         collectionView.dataSource = self
