@@ -19,11 +19,11 @@ enum GalleryID: Int {
     func name(hasGenderDifferences: Bool) -> String {
         switch self {
         case .frontDefault:
-            return hasGenderDifferences ? " ♂" : " Default "
+            return hasGenderDifferences ? " ♂" : " ♂♀"
         case .frontFemale:
             return " ♀"
         case .frontShiny:
-            return hasGenderDifferences ? " ♂⭑" : " ⭑"
+            return hasGenderDifferences ? " ♂⭑" : " ♂♀⭑"
         case .frontShinyFemale:
             return " ♀⭑"
         }

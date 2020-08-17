@@ -49,8 +49,12 @@ class PokemonViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        pokemonImage.layer.cornerRadius = 15
-        statsContainer.layer.cornerRadius = 15
+
+        let gradient = CAGradientLayer()
+        gradient.frame = view.frame
+        gradient.colors = [0x20E2D7.cgColor, 0xF9FEA5.cgColor]
+        view.layer.insertSublayer(gradient, at: 0)
+        
         configureView()
     }
     
@@ -178,6 +182,7 @@ class PokemonViewController: UIViewController {
                 let label = UILabel()
                 label.textAlignment = .right
                 label.text = varietyName
+                label.textColor = .black
                 formsNamesContainer.addArrangedSubview(label)
                 label.translatesAutoresizingMaskIntoConstraints = false
                 label.heightAnchor.constraint(equalTo: galleryButtonsView.heightAnchor).isActive = true
@@ -203,6 +208,7 @@ class PokemonViewController: UIViewController {
         guard let varietyName = sender.accessibilityIdentifier, let id = GalleryID(rawValue: sender.tag) else {
             return
         }
+        selectedForm = varietyName
         UIView.transition(
             with: self.pokemonImage,
             duration: 0.3,
