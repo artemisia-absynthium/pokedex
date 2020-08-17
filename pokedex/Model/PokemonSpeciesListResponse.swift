@@ -23,9 +23,9 @@ enum GalleryID: Int {
         case .frontFemale:
             return " ♀"
         case .frontShiny:
-            return hasGenderDifferences ? " ♂⭑" : " ♂♀⭑"
+            return hasGenderDifferences ? " ♂★" : " ♂♀★"
         case .frontShinyFemale:
-            return " ♀⭑"
+            return " ♀★"
         }
     }
 
