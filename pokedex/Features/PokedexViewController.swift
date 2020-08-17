@@ -63,6 +63,16 @@ class PokedexViewController: UIViewController {
                     controller.navigationItem.leftBarButtonItem = splitViewController?.displayModeButtonItem
                     controller.navigationItem.leftItemsSupplementBackButton = true
                     detailViewController = controller
+                } else {
+                    asyncFetcher.fetchAsync(identifier) { fetchedData in
+                        DispatchQueue.main.async {
+                            let controller = (segue.destination as! UINavigationController).topViewController as! PokemonViewController
+                            controller.detailItem = fetchedData
+                            controller.navigationItem.leftBarButtonItem = self.splitViewController?.displayModeButtonItem
+                            controller.navigationItem.leftItemsSupplementBackButton = true
+                            self.detailViewController = controller
+                        }
+                    }
                 }
             }
         }
