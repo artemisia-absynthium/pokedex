@@ -11,6 +11,8 @@ import CoreData
 
 class PokedexViewController: UITableViewController, NSFetchedResultsControllerDelegate {
 
+    @IBOutlet weak var searchBar: UISearchBar!
+
     var detailViewController: PokemonViewController? = nil
     var managedObjectContext: NSManagedObjectContext!
     private let network = Network()
@@ -105,7 +107,7 @@ class PokedexViewController: UITableViewController, NSFetchedResultsControllerDe
 
         // Edit the section name key path and cache name if appropriate.
         // nil for section name key path means "no sections".
-        let aFetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: self.managedObjectContext!, sectionNameKeyPath: nil, cacheName: "Master")
+        let aFetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: self.managedObjectContext!, sectionNameKeyPath: nil, cacheName: nil)
         aFetchedResultsController.delegate = self
         _fetchedResultsController = aFetchedResultsController
 
@@ -126,8 +128,35 @@ class PokedexViewController: UITableViewController, NSFetchedResultsControllerDe
         tableView.reloadData()
     }
 
+}
 
+// MARK: - UISearchBarDelegate
 
+extension PokedexViewController: UISearchBarDelegate {
+
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        search(searchText: searchText)
+    }
+
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let searchText = searchBar.text ?? ""
+        search(searchText: searchText)
+    }
+
+    private func search(searchText: String) {
+        if searchText.isEmpty {
+            fetchedResultsController.fetchRequest.predicate = nil
+        } else {
+            fetchedResultsController.fetchRequest.predicate = NSPredicate(format: "name BEGINSWITH[cd] %@", searchText)
+        }
+        do {
+            try fetchedResultsController.performFetch()
+            tableView.reloadData()
+            NSLog("Searching for pokémon named %@", searchText)
+        } catch {
+            fetchedResultsController.fetchRequest.predicate = nil
+            NSLog("Error searching for pokémon named %@", searchText)
+        }
     }
 
 }

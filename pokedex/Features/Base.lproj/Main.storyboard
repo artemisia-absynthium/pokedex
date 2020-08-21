@@ -144,9 +144,17 @@
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor" cocoaTouchSystemColor="whiteColor"/>
+                        <searchBar key="tableHeaderView" contentMode="redraw" placeholder="Search pokémon" id="Wev-Pd-87c">
+                            <rect key="frame" x="0.0" y="0.0" width="228" height="44"/>
+                            <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
+                            <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" returnKeyType="search"/>
+                            <connections>
+                                <outlet property="delegate" destination="qWf-W6-gFJ" id="zzx-C1-dbi"/>
+                            </connections>
+                        </searchBar>
                         <prototypes>
                             <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="pokemonCell" id="PiC-Qj-ANW" customClass="PokemonRow" customModule="Pokédex" customModuleProvider="target">
-                                <rect key="frame" x="0.0" y="28" width="414" height="100"/>
+                                <rect key="frame" x="0.0" y="72" width="414" height="100"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="PiC-Qj-ANW" id="o0P-Vd-XVc">
                                     <rect key="frame" x="0.0" y="0.0" width="414" height="100"/>
@@ -189,6 +197,9 @@
                     <navigationItem key="navigationItem" title="Pokédex" id="nip-8d-wcu">
                         <barButtonItem key="backBarButtonItem" title="Pokédex" id="3ik-fT-0NV"/>
                     </navigationItem>
+                    <connections>
+                        <outlet property="searchBar" destination="Wev-Pd-87c" id="fDB-B0-joc"/>
+                    </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="b0c-Uv-IYi" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
