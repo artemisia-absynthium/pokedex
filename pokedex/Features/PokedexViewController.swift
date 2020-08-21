@@ -75,13 +75,13 @@ class PokedexTableViewController: UITableViewController, NSFetchedResultsControl
             fatalError("Expected `\(PokemonRow.self)` type for reuseIdentifier \(PokemonRow.reuseIdentifier). Check the configuration in Main.storyboard.")
         }
         cell.configure(with: pokemonSpecies)
-        if let url = pokemonSpecies.url, !asyncFetcher.hasFetchedData(for: url)  {
+        if let url = pokemonSpecies.url  {
             asyncFetcher.fetchAsync(url, pokemonName: pokemonSpecies.name ?? "")
         }
     }
 
     override func tableView(_ tableView: UITableView, didEndDisplaying cell: UITableViewCell, forRowAt indexPath: IndexPath) {
-        if let cell = cell as? PokemonRow, let url = cell.representedIdentifier, !asyncFetcher.hasFetchedData(for: url) {
+        if let cell = cell as? PokemonRow, let url = cell.representedIdentifier {
             asyncFetcher.cancelFetch(url)
         }
     }

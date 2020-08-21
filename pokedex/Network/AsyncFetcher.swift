@@ -50,6 +50,9 @@ class AsyncFetcher {
     func fetchAsync(_ identifier: String, pokemonName: String) {
         // Use the serial queue while we access the fetch queue.
         serialAccessQueue.addOperation {
+            guard !self.fetchedSpecies.contains(identifier) else {
+                return
+            }
             self.fetchData(for: identifier, pokemonName: pokemonName)
         }
     }
