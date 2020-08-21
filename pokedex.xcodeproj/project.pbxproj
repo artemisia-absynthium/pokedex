@@ -187,9 +187,8 @@
 		6B91E1A024E2A4F400F7C067 /* Features */ = {
 			isa = PBXGroup;
 			children = (
-				6B91E19324E1C18D00F7C067 /* PokedexViewController.swift */,
-				6B91E19524E1C6F100F7C067 /* PokemonViewController.swift */,
-				6B05262124E2D617004721F6 /* PokemonCell.swift */,
+				6BF885C724F082C40053DD01 /* Master */,
+				6BF885C824F082E70053DD01 /* Detail */,
 				6B20EBAD24E1B796000CC901 /* Main.storyboard */,
 			);
 			path = Features;
@@ -210,6 +209,23 @@
 				6BE237A224E6C8C70077E295 /* UIColorExtension.swift */,
 			);
 			path = Util;
+			sourceTree = "<group>";
+		};
+		6BF885C724F082C40053DD01 /* Master */ = {
+			isa = PBXGroup;
+			children = (
+				6B91E19324E1C18D00F7C067 /* PokedexViewController.swift */,
+				6B05262124E2D617004721F6 /* PokemonCell.swift */,
+			);
+			path = Master;
+			sourceTree = "<group>";
+		};
+		6BF885C824F082E70053DD01 /* Detail */ = {
+			isa = PBXGroup;
+			children = (
+				6B91E19524E1C6F100F7C067 /* PokemonViewController.swift */,
+			);
+			path = Detail;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
