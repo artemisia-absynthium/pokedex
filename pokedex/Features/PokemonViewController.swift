@@ -245,7 +245,7 @@ class PokemonViewController: UIViewController {
         selectedImage = id
     }
 
-    private func transition(image: UIImage? = UIImage(named: "slash.circle")) {
+    private func transition(image: UIImage? = UIImage(named: "image.not.available")) {
         UIView.transition(
         with: self.pokemonImage,
         duration: 0.3,

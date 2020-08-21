@@ -35,7 +35,7 @@ class PokemonRow: UITableViewCell {
             if let data = defaultForm?.spriteFrontDefault {
                 image = UIImage(data: data)
             } else {
-                image = UIImage(named: "slash.circle")
+                image = UIImage(named: "image.not.available")
             }
             pokemonImageView.image = image
         }
