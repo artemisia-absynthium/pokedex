@@ -7,63 +7,37 @@
 //
 
 import UIKit
-import RxSwift
 
-class PokemonCell: UICollectionViewCell {
+class PokemonRow: UITableViewCell {
 
-    @IBOutlet weak var imageView: UIImageView!
-    @IBOutlet weak var label: UILabel!
-    
+    @IBOutlet weak var pokemonImageView: UIImageView!
+    @IBOutlet weak var pokemonNameLabel: UILabel!
+
     static let reuseIdentifier = "pokemonCell"
 
-    /// The Pokemon URL for the pokemon this cell is presenting.
+    /// The Pokemon species URL for the pokemon this cell is presenting.
     var representedIdentifier: String?
-
-    var disposeBag = DisposeBag()
-
-    override func awakeFromNib() {
-        super.awakeFromNib()
-        self.layer.cornerRadius = 10
-    }
 
     // MARK: Convenience
 
-    /**
-     Configures the cell for display based on the model.
+        /**
+         Configures the cell for display based on the model.
 
-     - Parameters:
-         - data: An optional `Pokemon` object to display.
-    */
-    func configure(with pokemon: PokemonSpeciesResponse?) {
-        disposeBag = DisposeBag()
-        label.text = pokemon?.name.formatted()
-        imageView.image = nil
-        var defaultForm = pokemon?.varieties.first(where: { variety in
-            variety.isDefault
-        })
-        defaultForm?.loadedPokemon
-            .observeOn(MainScheduler.instance)
-            .subscribe({ event in
-                switch event {
-                case .next(let pokemon):
-                    pokemon.sprites?.frontDefaultImage?
-                        .observeOn(MainScheduler.instance)
-                        .subscribe({ event in
-                            switch event {
-                            case .next(let image):
-                                self.imageView.image = image
-                            case .error:
-                                self.imageView.image = UIImage(named: "slash.circle")
-                            case .completed:
-                                return
-                            }
-                        }).disposed(by: self.disposeBag)
-                case .error:
-                    self.imageView.image = UIImage(named: "slash.circle")
-                case .completed:
-                    return
-                }
-            }).disposed(by: disposeBag)
-    }
+         - Parameters:
+             - data: An optional `Pokemon` object to display.
+        */
+        func configure(with pokemon: SpeciesMO?) {
+            pokemonNameLabel.text = pokemon?.name?.formatted()
+            let defaultForm = (pokemon?.varieties?.array as? [PokemonMO])?.first(where: { variety in
+                variety.isDefault
+            })
+            let image: UIImage?
+            if let data = defaultForm?.spriteFrontDefault {
+                image = UIImage(data: data)
+            } else {
+                image = UIImage(named: "slash.circle")
+            }
+            pokemonImageView.image = image
+        }
     
 }

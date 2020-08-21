@@ -1,4 +1,48 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="1" systemVersion="11A491" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithCloudKit="false" userDefinedModelVersionIdentifier="">
-    <elements/>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="16119" systemVersion="19G2021" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="PokemonMO" representedClassName="PokemonMO" syncable="YES" codeGenerationType="class">
+        <attribute name="isDefault" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="pokemonDownloaded" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="spriteFrontDefault" optional="YES" attributeType="Binary"/>
+        <attribute name="spriteFrontDefaultUrl" optional="YES" attributeType="String"/>
+        <attribute name="spriteFrontFemale" optional="YES" attributeType="Binary"/>
+        <attribute name="spriteFrontFemaleUrl" optional="YES" attributeType="String"/>
+        <attribute name="spriteFrontShiny" optional="YES" attributeType="Binary"/>
+        <attribute name="spriteFrontShinyFemale" optional="YES" attributeType="Binary"/>
+        <attribute name="spriteFrontShinyFemaleUrl" optional="YES" attributeType="String"/>
+        <attribute name="spriteFrontShinyUrl" optional="YES" attributeType="String"/>
+        <attribute name="url" optional="YES" attributeType="String"/>
+        <relationship name="species" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SpeciesMO" inverseName="varieties" inverseEntity="SpeciesMO"/>
+        <relationship name="stats" optional="YES" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="StatMO" inverseName="pokemon" inverseEntity="StatMO"/>
+        <relationship name="types" optional="YES" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="TypeMO" inverseName="pokemon" inverseEntity="TypeMO"/>
+    </entity>
+    <entity name="SpeciesMO" representedClassName="SpeciesMO" syncable="YES" codeGenerationType="class">
+        <attribute name="hasGenderDifferences" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="index" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="order" optional="YES" attributeType="Integer 64" usesScalarValueType="YES"/>
+        <attribute name="speciesDownloaded" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="url" optional="YES" attributeType="String"/>
+        <relationship name="varieties" optional="YES" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="PokemonMO" inverseName="species" inverseEntity="PokemonMO"/>
+    </entity>
+    <entity name="StatMO" representedClassName="StatMO" syncable="YES" codeGenerationType="class">
+        <attribute name="baseStat" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="effort" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="stat" optional="YES" attributeType="String"/>
+        <attribute name="url" optional="YES" attributeType="String"/>
+        <relationship name="pokemon" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="PokemonMO" inverseName="stats" inverseEntity="PokemonMO"/>
+    </entity>
+    <entity name="TypeMO" representedClassName="TypeMO" syncable="YES" codeGenerationType="class">
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="slot" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="url" optional="YES" attributeType="String"/>
+        <relationship name="pokemon" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="PokemonMO" inverseName="types" inverseEntity="PokemonMO"/>
+    </entity>
+    <elements>
+        <element name="PokemonMO" positionX="-347.88671875" positionY="-104.44921875" width="128" height="268"/>
+        <element name="SpeciesMO" positionX="-540.92578125" positionY="-14.4296875" width="128" height="148"/>
+        <element name="StatMO" positionX="-106.66796875" positionY="-58.3671875" width="128" height="118"/>
+        <element name="TypeMO" positionX="-100.44140625" positionY="127.7578125" width="128" height="103"/>
+    </elements>
 </model>

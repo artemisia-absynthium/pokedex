@@ -9,44 +9,28 @@
 import UIKit
 import CoreData
 
-class PokedexViewController: UIViewController {
+class PokedexTableViewController: UITableViewController, NSFetchedResultsControllerDelegate {
 
-    @IBOutlet weak var collectionView: UICollectionView!
     var detailViewController: PokemonViewController? = nil
     let network = Network()
-    lazy private var viewModel = PokemonViewModel(network: network)
-    lazy private var asyncFetcher = AsyncFetcher(network: network)
-    
-
+    var managedObjectContext: NSManagedObjectContext!
+    lazy private var viewModel = PokemonViewModel(network: network, managedObjectContext: managedObjectContext)
+    lazy private var asyncFetcher = AsyncFetcher(network: network, managedObjectContext: managedObjectContext)
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        let gradient = CAGradientLayer()
-        gradient.frame = view.frame
-        gradient.colors = [0x20E2D7.cgColor, 0xF9FEA5.cgColor]
-        view.layer.insertSublayer(gradient, at: 0)
-
-        viewModel.delegate = self
-        collectionView.delegate = self
-        collectionView.dataSource = self
-        collectionView.prefetchDataSource = self
-        viewModel.nextPage {
-            self.collectionView.reloadData()
-        }
         // Do any additional setup after loading the view.
         if let split = splitViewController {
             let controllers = split.viewControllers
             detailViewController = (controllers[controllers.count-1] as! UINavigationController).topViewController as? PokemonViewController
         }
+        viewModel.nextPage {
+            // Show error if any
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
-        if splitViewController!.isCollapsed, let selections = collectionView.indexPathsForSelectedItems {
-            for indexPath in selections {
-                collectionView.deselectItem(at: indexPath, animated: false)
-            }
-        }
+        clearsSelectionOnViewWillAppear = splitViewController!.isCollapsed
         super.viewWillAppear(animated)
     }
 
@@ -54,119 +38,143 @@ class PokedexViewController: UIViewController {
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "showDetail" {
-            if let indexPath = collectionView.indexPathsForSelectedItems?.first {
-                let pokemon = viewModel.pokemonList[indexPath.row]
-                let identifier = pokemon.url
-                if let fetchedData = asyncFetcher.fetchedData(for: identifier) {
-                    let controller = (segue.destination as! UINavigationController).topViewController as! PokemonViewController
-                    controller.detailItem = fetchedData
-                    controller.navigationItem.leftBarButtonItem = splitViewController?.displayModeButtonItem
-                    controller.navigationItem.leftItemsSupplementBackButton = true
-                    detailViewController = controller
-                } else {
-                    asyncFetcher.fetchAsync(identifier) { fetchedData in
-                        DispatchQueue.main.async {
-                            let controller = (segue.destination as! UINavigationController).topViewController as! PokemonViewController
-                            controller.detailItem = fetchedData
-                            controller.navigationItem.leftBarButtonItem = self.splitViewController?.displayModeButtonItem
-                            controller.navigationItem.leftItemsSupplementBackButton = true
-                            self.detailViewController = controller
-                        }
-                    }
+            if let indexPath = tableView.indexPathForSelectedRow {
+            let object = fetchedResultsController.object(at: indexPath)
+                let controller = (segue.destination as! UINavigationController).topViewController as! PokemonViewController
+                controller.detailItem = object
+                if controller.asyncFetcher == nil {
+                    controller.asyncFetcher = self.asyncFetcher
                 }
+                controller.navigationItem.leftBarButtonItem = splitViewController?.displayModeButtonItem
+                controller.navigationItem.leftItemsSupplementBackButton = true
+                detailViewController = controller
             }
         }
     }
-}
 
-// MARK: - Collection View
+    // MARK: - Table View
 
-extension PokedexViewController: UICollectionViewDataSource, UICollectionViewDataSourcePrefetching, UICollectionViewDelegateFlowLayout {
-
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return viewModel.pokemonResponse?.count ?? 0
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        return fetchedResultsController.sections?.count ?? 0
     }
 
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: PokemonCell.reuseIdentifier, for: indexPath) as? PokemonCell else {
-            fatalError("Expected `\(PokemonCell.self)` type for reuseIdentifier \(PokemonCell.reuseIdentifier). Check the configuration in Main.storyboard.")
-        }
-        configure(cell: cell, at: indexPath)
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        let sectionInfo = fetchedResultsController.sections![section]
+        return sectionInfo.numberOfObjects
+    }
+
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: PokemonRow.reuseIdentifier, for: indexPath)
+        let pokemonSpecies = fetchedResultsController.object(at: indexPath)
+        configureCell(cell, withPokemonSpecies: pokemonSpecies)
         return cell
     }
 
-    private func configure(cell: PokemonCell, at indexPath: IndexPath) {
-        if indexPath.row < viewModel.pokemonList.count {
-            let pokemon = viewModel.pokemonList[indexPath.row]
-            let identifier = pokemon.url
-            cell.representedIdentifier = identifier
-
-            if let fetchedData = asyncFetcher.fetchedData(for: identifier) {
-                cell.configure(with: fetchedData)
-            } else {
-                cell.configure(with: nil)
-
-                asyncFetcher.fetchAsync(identifier) { fetchedData in
-                    DispatchQueue.main.async {
-                        guard cell.representedIdentifier == identifier else { return }
-                        cell.configure(with: fetchedData)
-                    }
-                }
-            }
-        } else {
-            cell.configure(with: nil)
-            viewModel.nextPage {
-                self.configure(cell: cell, at: indexPath)
-            }
+    func configureCell(_ cell: UITableViewCell, withPokemonSpecies pokemonSpecies: SpeciesMO) {
+        guard let cell = cell as? PokemonRow else {
+            fatalError("Expected `\(PokemonRow.self)` type for reuseIdentifier \(PokemonRow.reuseIdentifier). Check the configuration in Main.storyboard.")
+        }
+        cell.configure(with: pokemonSpecies)
+        if let url = pokemonSpecies.url, asyncFetcher.fetchedData(for: url) == nil  {
+            asyncFetcher.fetchAsync(url, pokemonName: pokemonSpecies.name ?? "")
         }
     }
 
-    // MARK: UICollectionViewDataSourcePrefetching
-
-    /// - Tag: Prefetching
-    func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
-        // Begin asynchronously fetching data for the requested index paths.
-        let maxRow = indexPaths.sorted { (i1, i2) -> Bool in
-            i1.row < i2.row
-        }.last?.row ?? 0
-        fetchTo(maxRow: maxRow, indexPaths: indexPaths)
-    }
-
-    private func fetchTo(maxRow: Int, indexPaths: [IndexPath]) {
-        if maxRow < viewModel.pokemonList.count {
-            for indexPath in indexPaths {
-                let model = viewModel.pokemonList[indexPath.row]
-                asyncFetcher.fetchAsync(model.url)
-            }
-        } else {
-            viewModel.nextPage {
-                self.fetchTo(maxRow: maxRow, indexPaths: indexPaths)
-            }
+    override func tableView(_ tableView: UITableView, didEndDisplaying cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        if let cell = cell as? PokemonRow, let url = cell.representedIdentifier, asyncFetcher.fetchedData(for: url) == nil {
+            asyncFetcher.cancelFetch(url)
         }
     }
 
-    /// - Tag: CancelPrefetching
-    func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
-        for indexPath in indexPaths {
-            if indexPath.row < viewModel.pokemonList.count {
-                let model = viewModel.pokemonList[indexPath.row]
-                asyncFetcher.cancelFetch(model.url)
-            } // Otherwise I cannot have possibly enqueued any fetch request for it
+    // MARK: - Fetched results controller
+
+    var fetchedResultsController: NSFetchedResultsController<SpeciesMO> {
+        if _fetchedResultsController != nil {
+            return _fetchedResultsController!
         }
+
+        let fetchRequest: NSFetchRequest<SpeciesMO> = SpeciesMO.fetchRequest()
+
+        // Set the batch size to a suitable number.
+        fetchRequest.fetchBatchSize = 50
+
+        // Edit the sort key as appropriate.
+        let sortDescriptor = NSSortDescriptor(key: "index", ascending: true)
+
+        fetchRequest.sortDescriptors = [sortDescriptor]
+
+        // Edit the section name key path and cache name if appropriate.
+        // nil for section name key path means "no sections".
+        let aFetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: self.managedObjectContext!, sectionNameKeyPath: nil, cacheName: "Master")
+        aFetchedResultsController.delegate = self
+        _fetchedResultsController = aFetchedResultsController
+
+        do {
+            try _fetchedResultsController!.performFetch()
+        } catch {
+             // Replace this implementation with code to handle the error appropriately.
+             // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+             let nserror = error as NSError
+             fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
+        }
+
+        return _fetchedResultsController!
+    }
+    var _fetchedResultsController: NSFetchedResultsController<SpeciesMO>? = nil
+
+//    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+//        tableView.beginUpdates()
+//    }
+
+//    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
+//        switch type {
+//            case .insert:
+//                tableView.insertSections(IndexSet(integer: sectionIndex), with: .fade)
+//            case .delete:
+//                tableView.deleteSections(IndexSet(integer: sectionIndex), with: .fade)
+//            default:
+//                return
+//        }
+//    }
+//
+//    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
+//        switch type {
+//            case .insert:
+//                guard let newIndexPath = newIndexPath else {
+//                    return
+//                }
+//                tableView.insertRows(at: [newIndexPath], with: .fade)
+//            case .delete:
+//                guard let indexPath = indexPath else {
+//                    return
+//                }
+//                tableView.deleteRows(at: [indexPath], with: .fade)
+//            case .update:
+//                guard let indexPath = indexPath else {
+//                    return
+//                }
+//                configureCell(tableView.cellForRow(at: indexPath)!, withPokemonSpecies: anObject as! SpeciesMO)
+//            case .move:
+//                guard let indexPath = indexPath, let newIndexPath = newIndexPath else {
+//                    return
+//                }
+//                configureCell(tableView.cellForRow(at: indexPath)!, withPokemonSpecies: anObject as! SpeciesMO)
+//                tableView.moveRow(at: indexPath, to: newIndexPath)
+//            default:
+//                return
+//        }
+//    }
+//
+//    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+//        tableView.endUpdates()
+//    }
+
+
+     // Implementing the above methods to update the table view in response to individual changes may have performance implications if a large number of changes are made simultaneously. If this proves to be an issue, you can instead just implement controllerDidChangeContent: which notifies the delegate that all section and object changes have been processed.
+
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        // In the simplest, most efficient, case, reload the table view.
+        tableView.reloadData()
     }
 
-    // MARK: UICollectionViewDelegateFlowLayout
-
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let layout = collectionViewLayout as? UICollectionViewFlowLayout
-        let width = collectionView.frame.width - collectionView.contentInset.left - collectionView.contentInset.right - (layout?.sectionInset.left ?? 0) - (layout?.sectionInset.right ?? 0)
-        return CGSize(width: width, height: 100)
-    }
-    
-}
-
-extension PokedexViewController: PokemonViewModelDelegate {
-    func error(error: Error) {
-        // Show error
-    }
 }

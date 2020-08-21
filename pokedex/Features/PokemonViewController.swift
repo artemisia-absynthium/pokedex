@@ -7,7 +7,7 @@
 //
 
 import UIKit
-import RxSwift
+import CoreData
 
 class PokemonViewController: UIViewController {
 
@@ -19,33 +19,95 @@ class PokemonViewController: UIViewController {
     @IBOutlet weak var statsPointsLabel: UILabel!
     @IBOutlet weak var emptyStateView: UIView!
     @IBOutlet weak var emptyStateLabel: UILabel!
-    
-    var detailItem: PokemonSpeciesResponse? {
+
+    var asyncFetcher: AsyncFetcher?
+    var detailItem: SpeciesMO? {
         didSet {
             if isViewLoaded {
                 configureView()
             }
         }
     }
-    private var disposeBag = DisposeBag()
-    private var gallery: [String : [GalleryID : UIImage]] = [:]
-    private var forms: [String : PokemonResponse] = [:]
-    private var selectedForm: String? {
+    private var requestedOperations = [String]()
+    private var selectedVariety: String? {
         didSet {
-            guard let selectedForm = selectedForm, let form = forms[selectedForm] else {
+            guard let selectedVariety = selectedVariety, let variety = getSelectedVariety(selectedVariety: selectedVariety) else {
                 return
             }
-            buildTypesView(types: form.types)
-            buildStatsView(stats: form.stats)
+            buildTypesView(types: variety.types?.array as? [TypeMO] ?? [])
+            buildStatsView(stats: variety.stats?.array as? [StatMO] ?? [])
         }
     }
     private var selectedImage: GalleryID = .frontDefault {
         didSet {
-            guard let selectedForm = selectedForm else {
-                pokemonImage.image = nil
+            guard let selectedVariety = selectedVariety, let variety = getSelectedVariety(selectedVariety: selectedVariety) else {
+                self.transition()
                 return
             }
-            pokemonImage.image = gallery[selectedForm]?[selectedImage]
+            switch selectedImage {
+            case .frontDefault:
+                guard let url = variety.spriteFrontDefaultUrl else {
+                    self.transition()
+                    return
+                }
+                if let image = variety.spriteFrontDefault {
+                    self.transition(image: UIImage(data: image))
+                } else {
+                    self.loadImage(url: url, pokemon: variety, id: selectedImage)
+                }
+            case .frontShiny:
+                guard let url = variety.spriteFrontShinyUrl else {
+                    self.transition()
+                    return
+                }
+                if let image = variety.spriteFrontShiny {
+                    self.transition(image: UIImage(data: image))
+                } else {
+                    self.loadImage(url: url, pokemon: variety, id: selectedImage)
+                }
+            case .frontFemale:
+                guard let url = variety.spriteFrontFemaleUrl else {
+                    self.transition()
+                    return
+                }
+                if let image = variety.spriteFrontFemale {
+                    self.transition(image: UIImage(data: image))
+                } else {
+                    self.loadImage(url: url, pokemon: variety, id: selectedImage)
+                }
+            case .frontShinyFemale:
+                guard let url = variety.spriteFrontShinyFemaleUrl else {
+                    self.transition()
+                    return
+                }
+                if let image = variety.spriteFrontShinyFemale {
+                    self.transition(image: UIImage(data: image))
+                } else {
+                    self.loadImage(url: url, pokemon: variety, id: selectedImage)
+                }
+            }
+        }
+    }
+
+    private func getSelectedVariety(selectedVariety: String) -> PokemonMO? {
+        return (detailItem?.varieties?.array as? [PokemonMO])?.first(where: { pokemon in
+            pokemon.name == selectedVariety
+        })
+    }
+
+    private func loadImage(url: String, pokemon: PokemonMO, id: GalleryID) {
+        if let data = asyncFetcher?.fetchedImage(for: url) {
+            self.transition(image: UIImage(data: data))
+        } else {
+            requestedOperations.append(url)
+            asyncFetcher?.fetchAsyncImage(url, pokemonName: pokemon.name ?? "", id: selectedImage, completion: { data in
+                if self.selectedVariety == pokemon.name && self.selectedImage == id, let data = data {
+                    let image = UIImage(data: data)
+                    DispatchQueue.main.async {
+                        self.transition(image: image)
+                    }
+                }
+            })
         }
     }
 
@@ -59,91 +121,58 @@ class PokemonViewController: UIViewController {
         
         configureView()
     }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        for identifier in requestedOperations {
+            asyncFetcher?.cancelFetch(identifier)
+        }
+        requestedOperations.removeAll()
+    }
     
     func configureView() {
         emptyStateLabel.text = NSLocalizedString("EmptyState", value: "Welcome to the Pokédex, choose a Pokémon to see its details", comment: "Empty state default message")
         emptyStateView.isHidden = detailItem != nil
-        disposeBag = DisposeBag()
-        selectedImage = .frontDefault
-        selectedForm = nil
+        for identifier in requestedOperations {
+            asyncFetcher?.cancelFetch(identifier)
+        }
+        requestedOperations.removeAll()
+        selectedVariety = nil
         pokemonImage.image = nil
-        gallery.removeAll()
-        forms.removeAll()
-        if let detail = detailItem { // TODO: Else show empty state
-            navigationItem.title = detail.name.formatted()
-            let defaultForm = detail.varieties.first { $0.isDefault }
-            selectedForm = defaultForm?.pokemon.name
-            let imageClosure: (PokemonResponse, Event<UIImage>, GalleryID) -> Void = { pokemon, event, id in
-                switch event {
-                case .next(let image):
-                    self.gallery[pokemon.name, default: [:]][id] = image
-                case .error:
-                    self.gallery[pokemon.name, default: [:]][id] = UIImage(named: "slash.circle")!
-                case .completed:
-                    return
-                }
-                if self.selectedForm == pokemon.name && self.selectedImage == id {
-                    self.pokemonImage.image = self.gallery[pokemon.name]?[id]
-                }
-            }
-            for var variety in detail.varieties {
-                variety.loadedPokemon
-                    .observeOn(MainScheduler.instance)
-                    .subscribe({ event in
-                        switch event {
-                        case .next(let pokemon):
-                            self.forms[pokemon.name] = pokemon
-                            if self.selectedForm == pokemon.name {
-                                self.buildTypesView(types: pokemon.types)
-                                self.buildStatsView(stats: pokemon.stats)
-                            }
-                            pokemon.sprites?.frontDefaultImage?.observeOn(MainScheduler.instance)
-                                .subscribe({ event in
-                                    imageClosure(pokemon, event, .frontDefault)
-                                })
-                                .disposed(by: self.disposeBag)
-                            pokemon.sprites?.frontFemaleImage?.observeOn(MainScheduler.instance)
-                                .subscribe({ event in
-                                    imageClosure(pokemon, event, .frontFemale)
-                                })
-                                .disposed(by: self.disposeBag)
-                            pokemon.sprites?.frontShinyImage?.observeOn(MainScheduler.instance)
-                                .subscribe({ event in
-                                    imageClosure(pokemon, event, .frontShiny)
-                                })
-                                .disposed(by: self.disposeBag)
-                            pokemon.sprites?.frontShinyFemaleImage?.observeOn(MainScheduler.instance)
-                                .subscribe({ event in
-                                    imageClosure(pokemon, event, .frontShinyFemale)
-                                })
-                                .disposed(by: self.disposeBag)
-                        case .error:
-                            // TODO: Show error
-                            return
-                        case .completed:
-                            return
-                        }
-                    })
-                    .disposed(by: disposeBag)
-            }
+        if let detail = detailItem {
+            navigationItem.title = detail.name?.formatted()
+            let varieties = getVarieties()
+            let defaultForm = varieties.first { $0.isDefault }
+            self.buildTypesView(types: defaultForm?.types?.array as? [TypeMO] ?? [])
+            self.buildStatsView(stats: defaultForm?.stats?.array as? [StatMO] ?? [])
+            selectedVariety = defaultForm?.name
             buildGalleryButtonsView()
         }
+        selectedImage = .frontDefault
     }
 
-    private func buildStatsView(stats: [Stat]) {
+    private func buildStatsView(stats: [StatMO]) {
         var statsText = [String]()
         var statsPointsText = [String]()
         for stat in stats {
-            statsText.append("\(stat.stat.name.formatted()):")
+            statsText.append("\(stat.stat?.formatted() ?? "NA"):")
             statsPointsText.append("\(stat.baseStat)")
         }
         statsLabel.text = statsText.joined(separator: "\n")
         statsPointsLabel.text = statsPointsText.joined(separator: "\n")
     }
 
-    private func buildTypesView(types: [Type]) {
-        let typesString = types.map { $0.type.name.uppercased() }.joined(separator: "/")
+    private func buildTypesView(types: [TypeMO]) {
+        let typesString = types.map { ($0.name ?? "NA").uppercased() }.joined(separator: "/")
         typesLabel.text = "TYPE: \(typesString)"
+    }
+
+    private func hasMultipleForms() -> Bool {
+        return detailItem?.varieties?.count ?? 1 > 1
+    }
+
+    private func getVarieties() -> [PokemonMO] {
+        return (detailItem?.varieties?.array as? [PokemonMO]) ?? []
     }
 
     private func buildGalleryButtonsView() {
@@ -157,14 +186,14 @@ class PokemonViewController: UIViewController {
         formsNamesContainer.axis = .vertical
         formsNamesContainer.spacing = 8
         formsNamesContainer.distribution = .equalSpacing
-        if detail.hasMultipleForms {
+        if hasMultipleForms() {
             container.addArrangedSubview(formsNamesContainer)
         }
         let buttonsContainer = UIStackView(frame: CGRect(x: 0, y: 0, width: stackView.frame.width, height: 180))
         buttonsContainer.axis = .vertical
         buttonsContainer.spacing = 8
         container.addArrangedSubview(buttonsContainer)
-        detail.varieties.enumerated().forEach { offset, variety in
+        getVarieties().enumerated().forEach { offset, variety in
             let galleryButtonsView = UIStackView(frame: CGRect(x: 0, y: 0, width: stackView.frame.width, height: 180))
             galleryButtonsView.spacing = 4
             buttonsContainer.addArrangedSubview(galleryButtonsView)
@@ -178,8 +207,8 @@ class PokemonViewController: UIViewController {
                 let buttonFrontShinyFemale = createGalleryButton(pokemon: detail, variety: variety, id: .frontShinyFemale)
                 galleryButtonsView.addArrangedSubview(buttonFrontShinyFemale)
             }
-            if detail.hasMultipleForms {
-                var varietyName = variety.pokemon.name.replacingOccurrences(of: detail.name, with: "").formatted()
+            if hasMultipleForms() {
+                var varietyName = (variety.name ?? "").replacingOccurrences(of: detail.name ?? "", with: "").formatted()
                 if varietyName.isEmpty {
                     varietyName = NSLocalizedString("Normal", comment: "Default form name")
                 }
@@ -194,7 +223,7 @@ class PokemonViewController: UIViewController {
         }
     }
 
-    private func createGalleryButton(pokemon: PokemonSpeciesResponse, variety: PokemonVarietiesResponse, id: GalleryID) -> UIButton {
+    private func createGalleryButton(pokemon: SpeciesMO, variety: PokemonMO, id: GalleryID) -> UIButton {
         let button = UIButton(type: .system)
         button.setTitle(id.name(hasGenderDifferences: pokemon.hasGenderDifferences), for: [])
         button.titleLabel?.font = .systemFont(ofSize: 18)
@@ -202,7 +231,7 @@ class PokemonViewController: UIViewController {
         button.setTitleColor(.white, for: [])
         button.layer.cornerRadius = 15
         button.backgroundColor = id.color
-        button.accessibilityIdentifier = variety.pokemon.name
+        button.accessibilityIdentifier = variety.name
         button.tag = id.rawValue
         button.addTarget(self, action: #selector(setImage(_:)), for: .touchUpInside)
         return button
@@ -212,15 +241,19 @@ class PokemonViewController: UIViewController {
         guard let varietyName = sender.accessibilityIdentifier, let id = GalleryID(rawValue: sender.tag) else {
             return
         }
-        selectedForm = varietyName
+        selectedVariety = varietyName
+        selectedImage = id
+    }
+
+    private func transition(image: UIImage? = UIImage(named: "slash.circle")) {
         UIView.transition(
-            with: self.pokemonImage,
-            duration: 0.3,
-            options: .transitionCrossDissolve,
-            animations: {
-                self.pokemonImage.image = self.gallery[varietyName]?[id] ?? UIImage(named: "slash.circle")
-            },
-            completion: nil)
+        with: self.pokemonImage,
+        duration: 0.3,
+        options: .transitionCrossDissolve,
+        animations: {
+            self.pokemonImage.image = image
+        },
+        completion: nil)
     }
 
     

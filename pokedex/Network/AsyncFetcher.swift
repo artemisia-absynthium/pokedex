@@ -7,11 +7,13 @@
 //
 
 import Foundation
+import CoreData
 
 class AsyncFetcher {
     // MARK: Types
 
     private let network: Network
+    private let managedObjectContext: NSManagedObjectContext
 
     /// A serial `OperationQueue` to lock access to the `fetchQueue` and `completionHandlers` properties.
     private let serialAccessQueue = OperationQueue()
@@ -21,15 +23,20 @@ class AsyncFetcher {
 
     /// A dictionary of arrays of closures to call when an object has been fetched for an id.
     private var completionHandlers = [String: [(PokemonSpeciesResponse?) -> Void]]()
+    private var imageCompletionHandlers = [String: [(Data?) -> Void]]()
 
     /// An `NSCache` used to store fetched objects.
     private var cache = NSCache<NSString, PokemonSpeciesResponse>()
+    private var imageCache = NSCache<NSString, NSData>()
+    private var varietiesIdentifiers = [String: Set<String>]()
 
     // MARK: Initialization
 
-    init(network: Network) {
+    init(network: Network, managedObjectContext: NSManagedObjectContext) {
         self.network = network
+        self.managedObjectContext = managedObjectContext
         serialAccessQueue.maxConcurrentOperationCount = 1
+        fetchQueue.maxConcurrentOperationCount = 4
     }
 
     // MARK: Object fetching
@@ -41,7 +48,7 @@ class AsyncFetcher {
          - identifier: The `UUID` to fetch data for.
          - completion: An optional called when the data has been fetched.
     */
-    func fetchAsync(_ identifier: String, completion: ((PokemonSpeciesResponse?) -> Void)? = nil) {
+    func fetchAsync(_ identifier: String, pokemonName: String, completion: ((PokemonSpeciesResponse?) -> Void)? = nil) {
         // Use the serial queue while we access the fetch queue and completion handlers.
         serialAccessQueue.addOperation {
             // If a completion block has been provided, store it.
@@ -50,7 +57,20 @@ class AsyncFetcher {
                 self.completionHandlers[identifier] = handlers + [completion]
             }
 
-            self.fetchData(for: identifier)
+            self.fetchData(for: identifier, pokemonName: pokemonName)
+        }
+    }
+
+    func fetchAsyncImage(_ identifier: String, pokemonName: String, id: GalleryID, completion: ((Data?) -> Void)? = nil) {
+        // Use the serial queue while we access the fetch queue and completion handlers.
+        serialAccessQueue.addOperation {
+            // If a completion block has been provided, store it.
+            if let completion = completion {
+                let handlers = self.imageCompletionHandlers[identifier, default: []]
+                self.imageCompletionHandlers[identifier] = handlers + [completion]
+            }
+
+            self.fetchImage(for: identifier, pokemonName: pokemonName, id: id)
         }
     }
 
@@ -62,6 +82,10 @@ class AsyncFetcher {
      */
     func fetchedData(for identifier: String) -> PokemonSpeciesResponse? {
         return cache.object(forKey: identifier as NSString)
+    }
+
+    func fetchedImage(for identifier: String) -> Data? {
+        return imageCache.object(forKey: identifier as NSString) as Data?
     }
 
     /**
@@ -78,7 +102,12 @@ class AsyncFetcher {
             }
 
             self.operation(for: identifier)?.cancel()
+            NSLog("Canceled operation %@", identifier)
+            self.varietiesIdentifiers[identifier]?.forEach { varietyIdentifier in
+                self.cancelFetch(varietyIdentifier)
+            }
             self.completionHandlers[identifier] = nil
+            self.imageCompletionHandlers[identifier] = nil
         }
     }
 
@@ -90,28 +119,79 @@ class AsyncFetcher {
 
      - Parameter identifier: The `UUID` to fetch data for.
      */
-    private func fetchData(for identifier: String) {
+    private func fetchData(for speciesIdentifier: String, pokemonName: String) {
         // If a request has already been made for the object, do nothing more.
+        guard operation(for: speciesIdentifier) == nil else { return }
+
+        if let data = fetchedData(for: speciesIdentifier) {
+            // The object has already been cached; call the completion handler with that object.
+            invokeCompletionHandlers(for: speciesIdentifier, with: data)
+        } else {
+            // Enqueue a request for the object.
+            let speciesOperation = PokemonOperation(identifier: speciesIdentifier, pokemonName: pokemonName, network: network, managedObjectContext: managedObjectContext)
+
+            // Set the operation's completion block to cache the fetched object and call the associated completion blocks.
+            speciesOperation.completionBlock = { [weak speciesOperation] in
+                guard let fetchedData = speciesOperation?.fetchedData else { return }
+                self.cache.setObject(fetchedData, forKey: speciesIdentifier as NSString)
+
+                for variety in fetchedData.varieties {
+                    let varietyoperation = VarietyOperation(identifier: variety.pokemon.url, pokemonName: variety.pokemon.name, network: self.network, managedObjectContext: self.managedObjectContext)
+
+                    varietyoperation.completionBlock = { [weak varietyoperation] in
+                        guard let pokemon = varietyoperation?.fetchedData, variety.isDefault, let frontDefaultUrl = pokemon.sprites?.frontDefault else { return }
+
+                        let defaultImageOperation = ImageOperation(identifier: frontDefaultUrl, pokemonName: pokemon.name, id: .frontDefault, network: self.network, managedObjectContext: self.managedObjectContext)
+
+                        defaultImageOperation.completionBlock = { [weak defaultImageOperation] in
+                            guard let image = defaultImageOperation?.fetchedData else { return }
+                            self.imageCache.setObject(image as NSData, forKey: frontDefaultUrl as NSString)
+
+                            self.serialAccessQueue.addOperation {
+                                self.invokeCompletionHandlers(for: frontDefaultUrl, with: fetchedData)
+                            }
+                        }
+
+                        self.fetchQueue.addOperation(defaultImageOperation)
+                        NSLog("Added operation image %@", variety.pokemon.name)
+                    }
+
+                    self.varietiesIdentifiers[speciesIdentifier, default: []].insert(variety.pokemon.url)
+                    self.fetchQueue.addOperation(varietyoperation)
+                    NSLog("Added operation variety %@", variety.pokemon.name)
+                }
+
+                self.serialAccessQueue.addOperation {
+                    self.invokeCompletionHandlers(for: speciesIdentifier, with: fetchedData)
+                }
+            }
+
+            fetchQueue.addOperation(speciesOperation)
+            NSLog("Added operation species %@", pokemonName)
+        }
+    }
+
+    private func fetchImage(for identifier: String, pokemonName: String, id: GalleryID) {
         guard operation(for: identifier) == nil else { return }
 
-        if let data = fetchedData(for: identifier) {
+        if let data = fetchedImage(for: identifier) {
             // The object has already been cached; call the completion handler with that object.
             invokeCompletionHandlers(for: identifier, with: data)
         } else {
             // Enqueue a request for the object.
-            let operation = PokemonOperation(identifier: identifier, network: network)
+            let operation = ImageOperation(identifier: identifier, pokemonName: pokemonName, id: id, network: self.network, managedObjectContext: self.managedObjectContext)
 
-            // Set the operation's completion block to cache the fetched object and call the associated completion blocks.
             operation.completionBlock = { [weak operation] in
                 guard let fetchedData = operation?.fetchedData else { return }
-                self.cache.setObject(fetchedData, forKey: identifier as NSString)
+                self.imageCache.setObject(fetchedData as NSData, forKey: identifier as NSString)
 
                 self.serialAccessQueue.addOperation {
                     self.invokeCompletionHandlers(for: identifier, with: fetchedData)
                 }
             }
 
-            fetchQueue.addOperation(operation)
+            self.fetchQueue.addOperation(operation)
+            NSLog("Added operation image %@", identifier)
         }
     }
 
@@ -121,8 +201,8 @@ class AsyncFetcher {
      - Parameter identifier: The `UUID` of the operation to return.
      - Returns: The enqueued `ObjectFetcherOperation` or nil.
      */
-    private func operation(for identifier: String) -> PokemonOperation? {
-        for case let fetchOperation as PokemonOperation in fetchQueue.operations
+    private func operation(for identifier: String) -> PokemonRelatedOperation? {
+        for case let fetchOperation as PokemonRelatedOperation in fetchQueue.operations
             where !fetchOperation.isCancelled && fetchOperation.identifier == identifier {
             return fetchOperation
         }
@@ -141,6 +221,15 @@ class AsyncFetcher {
     private func invokeCompletionHandlers(for identifier: String, with fetchedData: PokemonSpeciesResponse) {
         let completionHandlers = self.completionHandlers[identifier, default: []]
         self.completionHandlers[identifier] = nil
+
+        for completionHandler in completionHandlers {
+            completionHandler(fetchedData)
+        }
+    }
+
+    private func invokeCompletionHandlers(for identifier: String, with fetchedData: Data) {
+        let completionHandlers = self.imageCompletionHandlers[identifier, default: []]
+        self.imageCompletionHandlers[identifier] = nil
 
         for completionHandler in completionHandlers {
             completionHandler(fetchedData)
