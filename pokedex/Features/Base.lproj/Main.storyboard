@@ -139,7 +139,7 @@
         <!--Pokédex-->
         <scene sceneID="hMf-Ki-T2D">
             <objects>
-                <tableViewController id="qWf-W6-gFJ" customClass="PokedexTableViewController" customModule="Pokédex" customModuleProvider="target" sceneMemberID="viewController">
+                <tableViewController id="qWf-W6-gFJ" customClass="PokedexViewController" customModule="Pokédex" customModuleProvider="target" sceneMemberID="viewController">
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="100" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" id="k02-Ef-SOB">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>

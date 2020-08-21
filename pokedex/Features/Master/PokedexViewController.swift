@@ -9,11 +9,11 @@
 import UIKit
 import CoreData
 
-class PokedexTableViewController: UITableViewController, NSFetchedResultsControllerDelegate {
+class PokedexViewController: UITableViewController, NSFetchedResultsControllerDelegate {
 
     var detailViewController: PokemonViewController? = nil
-    let network = Network()
     var managedObjectContext: NSManagedObjectContext!
+    private let network = Network()
     lazy private var viewModel = PokemonViewModel(network: network, managedObjectContext: managedObjectContext)
     lazy private var asyncFetcher = AsyncFetcher(network: network, managedObjectContext: managedObjectContext)
 
@@ -122,59 +122,12 @@ class PokedexTableViewController: UITableViewController, NSFetchedResultsControl
     }
     var _fetchedResultsController: NSFetchedResultsController<SpeciesMO>? = nil
 
-//    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-//        tableView.beginUpdates()
-//    }
-
-//    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
-//        switch type {
-//            case .insert:
-//                tableView.insertSections(IndexSet(integer: sectionIndex), with: .fade)
-//            case .delete:
-//                tableView.deleteSections(IndexSet(integer: sectionIndex), with: .fade)
-//            default:
-//                return
-//        }
-//    }
-//
-//    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
-//        switch type {
-//            case .insert:
-//                guard let newIndexPath = newIndexPath else {
-//                    return
-//                }
-//                tableView.insertRows(at: [newIndexPath], with: .fade)
-//            case .delete:
-//                guard let indexPath = indexPath else {
-//                    return
-//                }
-//                tableView.deleteRows(at: [indexPath], with: .fade)
-//            case .update:
-//                guard let indexPath = indexPath else {
-//                    return
-//                }
-//                configureCell(tableView.cellForRow(at: indexPath)!, withPokemonSpecies: anObject as! SpeciesMO)
-//            case .move:
-//                guard let indexPath = indexPath, let newIndexPath = newIndexPath else {
-//                    return
-//                }
-//                configureCell(tableView.cellForRow(at: indexPath)!, withPokemonSpecies: anObject as! SpeciesMO)
-//                tableView.moveRow(at: indexPath, to: newIndexPath)
-//            default:
-//                return
-//        }
-//    }
-//
-//    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-//        tableView.endUpdates()
-//    }
-
-
-     // Implementing the above methods to update the table view in response to individual changes may have performance implications if a large number of changes are made simultaneously. If this proves to be an issue, you can instead just implement controllerDidChangeContent: which notifies the delegate that all section and object changes have been processed.
-
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        // In the simplest, most efficient, case, reload the table view.
         tableView.reloadData()
+    }
+
+
+
     }
 
 }

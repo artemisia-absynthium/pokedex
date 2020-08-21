@@ -27,7 +27,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISplitViewControllerDele
         splitViewController.delegate = self
 
         let masterNavigationController = splitViewController.viewControllers[0] as! UINavigationController
-        let controller = masterNavigationController.topViewController as! PokedexTableViewController
+        let controller = masterNavigationController.topViewController as! PokedexViewController
         controller.managedObjectContext = self.persistentContainer.viewContext
         return true
     }
