@@ -23,7 +23,7 @@ class PokemonOperation: Operation, PokemonRelatedOperation {
     /// The `String` pokemon species name that the operation is fetching data for.
     let pokemonName: String
 
-    private let network: Network
+    private let network: Networkable
     private let managedObjectContext: NSManagedObjectContext
 
     /// The `PokemonSpeciesResponse` that has been fetched by this operation.
@@ -31,7 +31,7 @@ class PokemonOperation: Operation, PokemonRelatedOperation {
 
     // MARK: Initialization
 
-    init(identifier: String, pokemonName: String, network: Network, managedObjectContext: NSManagedObjectContext) {
+    init(identifier: String, pokemonName: String, network: Networkable, managedObjectContext: NSManagedObjectContext) {
         self.identifier = identifier
         self.pokemonName = pokemonName
         self.network = network
@@ -67,7 +67,7 @@ class VarietyOperation: Operation {
     /// The `String` pokemon name that the operation is fetching data for.
     let pokemonName: String
 
-    let network: Network
+    let network: Networkable
     let managedObjectContext: NSManagedObjectContext
 
     /// The `PokemonResponse` that has been fetched by this operation.
@@ -75,7 +75,7 @@ class VarietyOperation: Operation {
 
     // MARK: Initialization
 
-    init(identifier: String, pokemonName: String, network: Network, managedObjectContext: NSManagedObjectContext) {
+    init(identifier: String, pokemonName: String, network: Networkable, managedObjectContext: NSManagedObjectContext) {
         self.identifier = identifier
         self.pokemonName = pokemonName
         self.network = network
@@ -114,7 +114,7 @@ class ImageOperation: Operation {
     /// The `GalleryID` image type that the operation is fetching data for.
     let id: GalleryID
 
-    let network: Network
+    let network: Networkable
     let managedObjectContext: NSManagedObjectContext
 
     /// The image `Data` that has been fetched by this operation.
@@ -122,7 +122,7 @@ class ImageOperation: Operation {
 
     // MARK: Initialization
 
-    init(identifier: String, pokemonName: String, id: GalleryID, network: Network, managedObjectContext: NSManagedObjectContext) {
+    init(identifier: String, pokemonName: String, id: GalleryID, network: Networkable, managedObjectContext: NSManagedObjectContext) {
         self.identifier = identifier
         self.pokemonName = pokemonName
         self.id = id

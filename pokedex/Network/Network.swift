@@ -9,7 +9,14 @@
 import Foundation
 import UIKit
 
-class Network {
+protocol Networkable {
+    func pokemonList(urlString: String, completion: @escaping (Result<PokemonSpeciesListResponse, Error>) -> Void)
+    func pokemonSpecies(urlString: String, completion: @escaping (Result<PokemonSpeciesResponse, Error>) -> Void)
+    func pokemon(urlString: String, completion: @escaping (Result<PokemonResponse, Error>) -> Void)
+    func fetchImage(urlString: String, completion: @escaping (Result<Data, Error>) -> Void)
+}
+
+class Network: Networkable {
 
     private let pokeApiBaseURL = "https://pokeapi.co/api/v2"
 

@@ -11,7 +11,7 @@ import CoreData
 
 class PokemonViewModel {
 
-    private let network: Network
+    private let network: Networkable
     private let managedObjectContext: NSManagedObjectContext
     private let limit = 1000
 
@@ -21,7 +21,7 @@ class PokemonViewModel {
     private var completionHandlers = [String: [() -> Void]]()
     private var runningOperations = [String : Operation]()
 
-    init(network: Network, managedObjectContext: NSManagedObjectContext) {
+    init(network: Networkable, managedObjectContext: NSManagedObjectContext) {
         self.network = network
         self.managedObjectContext = managedObjectContext
     }

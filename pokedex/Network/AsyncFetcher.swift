@@ -12,7 +12,7 @@ import CoreData
 class AsyncFetcher {
     // MARK: Types
 
-    private let network: Network
+    private let network: Networkable
     private let managedObjectContext: NSManagedObjectContext
 
     /// A serial `OperationQueue` to lock access to the `fetchQueue` and `completionHandlers` properties.
@@ -22,6 +22,7 @@ class AsyncFetcher {
     private let fetchQueue = OperationQueue()
 
     /// A dictionary of arrays of closures to call when an image has been fetched for an id.
+    private var completionHandlers = [String: [() -> Void]]()
     private var imageCompletionHandlers = [String: [(Data?) -> Void]]()
 
     /// An `NSCache` used to store fetched images, needed for avoiding making fetch requests to Core Data in detail view controller for each Pokemon image requested.
@@ -31,7 +32,7 @@ class AsyncFetcher {
 
     // MARK: Initialization
 
-    init(network: Network, managedObjectContext: NSManagedObjectContext) {
+    init(network: Networkable, managedObjectContext: NSManagedObjectContext) {
         self.network = network
         self.managedObjectContext = managedObjectContext
         serialAccessQueue.maxConcurrentOperationCount = 1
@@ -47,12 +48,18 @@ class AsyncFetcher {
          - identifier: The `UUID` to fetch data for.
          - completion: An optional called when the data has been fetched.
     */
-    func fetchAsync(_ identifier: String, pokemonName: String) {
+    func fetchAsync(_ identifier: String, pokemonName: String, completion: (() -> Void)? = nil) {
         // Use the serial queue while we access the fetch queue.
         serialAccessQueue.addOperation {
-            guard !self.fetchedSpecies.contains(identifier) else {
+            guard !self.hasFetchedData(for: identifier) else {
                 return
             }
+            // If a completion block has been provided, store it.
+            if let completion = completion {
+                let handlers = self.completionHandlers[identifier, default: []]
+                self.completionHandlers[identifier] = handlers + [completion]
+            }
+
             self.fetchData(for: identifier, pokemonName: pokemonName)
         }
     }
@@ -102,6 +109,7 @@ class AsyncFetcher {
             self.varietiesIdentifiers[identifier]?.forEach { varietyIdentifier in
                 self.cancelFetch(varietyIdentifier)
             }
+            self.completionHandlers[identifier] = nil
             self.imageCompletionHandlers[identifier] = nil
         }
     }
@@ -141,6 +149,7 @@ class AsyncFetcher {
                         self.imageCache.setObject(image as NSData, forKey: frontDefaultUrl as NSString)
 
                         self.serialAccessQueue.addOperation {
+                            self.invokeCompletionHandlers(for: speciesIdentifier)
                             self.invokeCompletionHandlers(for: frontDefaultUrl, with: image)
                         }
                     }
@@ -212,6 +221,15 @@ class AsyncFetcher {
 
         for completionHandler in completionHandlers {
             completionHandler(fetchedData)
+        }
+    }
+
+    private func invokeCompletionHandlers(for identifier: String) {
+        let completionHandlers = self.completionHandlers[identifier, default: []]
+        self.completionHandlers[identifier] = nil
+
+        for completionHandler in completionHandlers {
+            completionHandler()
         }
     }
 }
