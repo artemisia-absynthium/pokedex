@@ -41,7 +41,7 @@ class PokemonViewController: UIViewController {
     private var selectedImage: GalleryID = .frontDefault {
         didSet {
             guard let selectedVariety = selectedVariety, let variety = getSelectedVariety(selectedVariety: selectedVariety) else {
-                self.transition()
+                self.transition(image: nil)
                 return
             }
             switch selectedImage {

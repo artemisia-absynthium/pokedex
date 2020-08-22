@@ -91,7 +91,7 @@
                                 <rect key="frame" x="16" y="435" width="382" height="26.5"/>
                                 <subviews>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text=" " textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="dgd-AZ-9u7">
-                                        <rect key="frame" x="42" y="0.0" width="5" height="26.5"/>
+                                        <rect key="frame" x="42" y="0.0" width="298" height="26.5"/>
                                         <fontDescription key="fontDescription" type="system" pointSize="22"/>
                                         <nil key="textColor"/>
                                         <nil key="highlightedColor"/>
@@ -100,7 +100,7 @@
                                 <constraints>
                                     <constraint firstAttribute="bottom" secondItem="dgd-AZ-9u7" secondAttribute="bottom" id="8du-tw-X9P"/>
                                     <constraint firstItem="dgd-AZ-9u7" firstAttribute="leading" secondItem="bkG-cI-I3b" secondAttribute="leading" constant="42" id="M1i-WC-sNP"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="dgd-AZ-9u7" secondAttribute="trailing" constant="42" id="XeM-do-69d"/>
+                                    <constraint firstAttribute="trailing" secondItem="dgd-AZ-9u7" secondAttribute="trailing" constant="42" id="XeM-do-69d"/>
                                     <constraint firstItem="dgd-AZ-9u7" firstAttribute="top" secondItem="bkG-cI-I3b" secondAttribute="top" id="etw-du-dbu"/>
                                 </constraints>
                             </view>
@@ -145,7 +145,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor" cocoaTouchSystemColor="whiteColor"/>
                         <searchBar key="tableHeaderView" contentMode="redraw" placeholder="Search pokémon" id="Wev-Pd-87c">
-                            <rect key="frame" x="0.0" y="0.0" width="228" height="44"/>
+                            <rect key="frame" x="0.0" y="0.0" width="414" height="44"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
                             <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" returnKeyType="search"/>
                             <connections>
