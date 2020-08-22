@@ -123,7 +123,9 @@ class AsyncFetcher {
         // Set the operation's completion block to cache the fetched object and call the associated completion blocks.
         speciesOperation.completionBlock = { [weak speciesOperation] in
             guard let fetchedData = speciesOperation?.fetchedData else { return }
-            self.fetchedSpecies.insert(speciesIdentifier)
+            self.serialAccessQueue.addOperation {
+                self.fetchedSpecies.insert(speciesIdentifier)
+            }
 
             for variety in fetchedData.varieties {
                 let varietyIdentifier = variety.pokemon.url
